@@ -22,5 +22,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
+    // Polyfill WebSocket for @supabase/realtime-js under Node 20 (see vitest.setup.ts)
+    setupFiles: ['./vitest.setup.ts'],
   },
 })
