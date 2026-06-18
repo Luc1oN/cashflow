@@ -249,6 +249,16 @@ export default function Dashboard() {
               ? <>You'd go <span className="font-medium text-claret">over your {money(forecast.limit)} limit on {format(parseISO(forecast.firstOverLimit), 'EEEE d MMM')}</span> — move a planned expense or trim a bill.</>
               : <>You stay within your limit through {format(parseISO(forecast.days[forecast.days.length - 1].date), 'd MMM')}. Tightest day is {format(parseISO(low.date), 'd MMM')} with {money(low.available)} free.</>}
         </p>
+        <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate2">
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: colors.moss }} /> Available credit</span>
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: colors.violet }} /> Vault (surplus)</span>
+          {forecast.limit > 0 && (
+            <span className="flex items-center gap-1.5"><span className="inline-block h-0 w-4 border-t-2 border-dashed align-middle" style={{ borderColor: colors.amber }} /> CC limit ({money(forecast.limit)})</span>
+          )}
+          {scenarioForecast && (
+            <span className="flex items-center gap-1.5"><span className="inline-block h-0 w-4 border-t-2 border-dashed align-middle" style={{ borderColor: colors.mossdeep }} /> Scenario</span>
+          )}
+        </div>
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
@@ -257,15 +267,23 @@ export default function Dashboard() {
                   <stop offset="0%" stopColor={colors.moss} stopOpacity={0.25} />
                   <stop offset="100%" stopColor={colors.moss} stopOpacity={0.02} />
                 </linearGradient>
+                <linearGradient id="vaultFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={colors.violet} stopOpacity={0.22} />
+                  <stop offset="100%" stopColor={colors.violet} stopOpacity={0.02} />
+                </linearGradient>
               </defs>
               <CartesianGrid stroke={colors.line} strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="date" tickFormatter={(d: string) => format(parseISO(d), 'd MMM')} tick={{ fontSize: 11, fill: colors.slate }} tickLine={false} axisLine={{ stroke: colors.line }} minTickGap={48} />
               <YAxis tickFormatter={(v: number) => moneyShort(v)} tick={{ fontSize: 11, fill: colors.slate, fontFamily: 'IBM Plex Mono' }} tickLine={false} axisLine={false} width={76} />
               <Tooltip cursor={{ stroke: colors.line }} content={<ForecastTooltip />} />
               <ReferenceLine y={0} stroke={colors.claret} strokeDasharray="4 4" label={{ value: 'Over limit', position: 'insideBottomRight', fontSize: 10, fill: colors.claret }} />
-              <Area type="monotone" dataKey="available" stroke={colors.moss} strokeWidth={2} fill="url(#availFill)" />
+              {forecast.limit > 0 && (
+                <ReferenceLine y={forecast.limit} stroke={colors.amber} strokeDasharray="5 4" label={{ value: `CC limit ${moneyShort(forecast.limit)}`, position: 'insideTopRight', fontSize: 10, fill: colors.amber }} />
+              )}
+              <Area type="monotone" dataKey="available" name="Available credit" stroke={colors.moss} strokeWidth={2} fill="url(#availFill)" />
+              <Area type="monotone" dataKey="vault" name="Vault" stroke={colors.violet} strokeWidth={2} fill="url(#vaultFill)" dot={false} />
               {scenarioForecast && (
-                <Line type="monotone" dataKey="scenarioAvailable" stroke={colors.amber} strokeWidth={2} strokeDasharray="6 4" dot={false} />
+                <Line type="monotone" dataKey="scenarioAvailable" name="Scenario" stroke={colors.mossdeep} strokeWidth={2} strokeDasharray="6 4" dot={false} />
               )}
               <ReferenceDot x={low.date} y={low.available} r={4} fill={colors.amber} stroke="rgb(var(--surface))" strokeWidth={2} />
             </AreaChart>
@@ -460,13 +478,26 @@ function ForecastTooltip({ active, payload }: {
   const day = payload[0].payload
   const events = day.events ?? []
   const net = events.reduce((s, e) => s + e.amount, 0)
+  const vault = day.vault ?? 0
   return (
-    <div className="min-w-[200px] max-w-[280px] rounded-lg border border-line bg-surface p-3 text-xs shadow-card">
+    <div className="min-w-[210px] max-w-[290px] rounded-lg border border-line bg-surface p-3 text-xs shadow-card">
       <p className="mb-1.5 font-medium text-ink">{format(parseISO(day.date), 'EEEE d MMM yyyy')}</p>
       <div className="flex items-center justify-between gap-4">
         <span className="text-slate2">Available credit</span>
         <span className="font-num font-semibold text-ink">{money(day.available)}</span>
       </div>
+      {vault > 0 && (
+        <>
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-slate2">Vault (surplus)</span>
+            <span className="font-num font-semibold text-violet">{money(vault)}</span>
+          </div>
+          <div className="mt-1 flex items-center justify-between gap-4 border-t border-line pt-1">
+            <span className="text-slate2">Net position</span>
+            <span className="font-num font-semibold text-ink">{money(day.available + vault)}</span>
+          </div>
+        </>
+      )}
       {typeof day.scenarioAvailable === 'number' && (
         <div className="flex items-center justify-between gap-4">
           <span className="text-amber2">With scenario</span>

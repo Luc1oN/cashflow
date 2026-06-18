@@ -15,6 +15,7 @@ export default {
         mossdeep: 'rgb(var(--mossdeep) / <alpha-value>)',
         amber2: 'rgb(var(--amber2) / <alpha-value>)',
         claret: 'rgb(var(--claret) / <alpha-value>)',
+        violet: 'rgb(var(--violet) / <alpha-value>)',
       },
       fontFamily: {
         display: ['Fraunces', 'Georgia', 'serif'],

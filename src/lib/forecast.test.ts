@@ -131,6 +131,21 @@ describe('buildForecast (credit-card-centric)', () => {
     expect(r.days[2].available).toBe(4000)
   })
 
+  it('pushes overpayment surplus into the vault', () => {
+    const r = buildForecast({
+      accounts: [card({ balance: 300 })],
+      bills: [],
+      income: [income({ amount: 1500, frequency: 'one_off', next_date: d(2) })],
+      savingsGoals: [],
+      plannedExpenses: [],
+      horizonDays: 6,
+    })
+    // 1500 clears the 300 owed; the 1200 surplus lands in the vault, available caps at the limit
+    expect(r.days[2].available).toBe(4000)
+    expect(r.days[2].vault).toBe(1200)
+    expect(r.endVault).toBe(1200)
+  })
+
   it('charges planned expenses to the card', () => {
     const r = buildForecast({ accounts: [card({ balance: 1000 })], bills: [], income: [], savingsGoals: [], plannedExpenses: [planned({ amount: 50, date: d(3) })], horizonDays: 10 })
     expect(r.days[3].available).toBe(2950)

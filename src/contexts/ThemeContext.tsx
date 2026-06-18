@@ -32,8 +32,10 @@ export function useChartColors() {
   void theme
   return {
     moss: get('--moss'),
+    mossdeep: get('--mossdeep'),
     amber: get('--amber2'),
     claret: get('--claret'),
+    violet: get('--violet'),
     line: get('--line'),
     slate: get('--slate2'),
   }

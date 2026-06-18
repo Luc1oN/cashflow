@@ -1,23 +1,28 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import {
+  LayoutGrid, Receipt, FileText, CalendarClock, Wallet, Banknote,
+  PiggyBank, Landmark, History, Settings, Menu, X, Sun, Moon, LogOut,
+  PanelLeftClose, PanelLeftOpen, TrendingUp, type LucideIcon,
+} from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 
-type NavItem = { to: string; label: string; icon: string; exact?: boolean }
+type NavItem = { to: string; label: string; Icon: LucideIcon; exact?: boolean }
 
 // Single source of truth for navigation. Order here is the order shown in the
 // desktop sidebar and the mobile slide-out menu.
 const nav: NavItem[] = [
-  { to: '/', label: 'Dashboard', icon: '◈', exact: true },
-  { to: '/spending', label: 'Spending', icon: '✦' },
-  { to: '/bills', label: 'Bills', icon: '▤' },
-  { to: '/planned', label: 'Planned', icon: '◷' },
-  { to: '/accounts', label: 'Accounts', icon: '▦' },
-  { to: '/income', label: 'Income', icon: '⊕' },
-  { to: '/savings', label: 'Savings', icon: '◉' },
-  { to: '/loans', label: 'Loans', icon: '⊘' },
-  { to: '/history', label: 'History', icon: '↺' },
-  { to: '/settings', label: 'Settings', icon: '⚙' },
+  { to: '/', label: 'Dashboard', Icon: LayoutGrid, exact: true },
+  { to: '/spending', label: 'Spending', Icon: Receipt },
+  { to: '/bills', label: 'Bills', Icon: FileText },
+  { to: '/planned', label: 'Planned', Icon: CalendarClock },
+  { to: '/accounts', label: 'Accounts', Icon: Wallet },
+  { to: '/income', label: 'Income', Icon: Banknote },
+  { to: '/savings', label: 'Savings', Icon: PiggyBank },
+  { to: '/loans', label: 'Loans', Icon: Landmark },
+  { to: '/history', label: 'History', Icon: History },
+  { to: '/settings', label: 'Settings', Icon: Settings },
 ]
 
 // The four items pinned to the mobile bottom tab bar (in this order).
@@ -77,8 +82,11 @@ export default function Layout() {
     } ${collapsedRail ? 'justify-center' : ''}`
 
   const Logo = (
-    <NavLink to="/" className="font-display text-xl font-semibold text-ink">
-      Cash<span className="text-moss">Flow</span>
+    <NavLink to="/" className="flex items-center gap-2 font-display text-xl font-semibold text-ink">
+      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-moss text-paper">
+        <TrendingUp size={16} strokeWidth={2.5} aria-hidden />
+      </span>
+      <span>Cash<span className="text-moss">Flow</span></span>
     </NavLink>
   )
 
@@ -89,17 +97,17 @@ export default function Layout() {
         <button
           onClick={() => setDrawerOpen(true)}
           aria-label="Open menu"
-          className="rounded-lg border border-line px-2.5 py-1.5 text-lg leading-none text-ink hover:bg-mist"
+          className="rounded-lg border border-line p-2 text-ink hover:bg-mist"
         >
-          ☰
+          <Menu size={20} aria-hidden />
         </button>
         {Logo}
         <button
           onClick={toggle}
           aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          className="ml-auto rounded-lg border border-line px-2.5 py-1.5 text-slate2 hover:bg-mist hover:text-ink"
+          className="ml-auto rounded-lg border border-line p-2 text-slate2 hover:bg-mist hover:text-ink"
         >
-          {theme === 'dark' ? '☀' : '☾'}
+          {theme === 'dark' ? <Sun size={18} aria-hidden /> : <Moon size={18} aria-hidden />}
         </button>
       </header>
 
@@ -116,11 +124,11 @@ export default function Layout() {
               onClick={() => setCollapsed((c) => !c)}
               aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               title={collapsed ? 'Expand' : 'Collapse'}
-              className={`rounded-lg border border-line px-2 py-1 text-slate2 hover:bg-mist hover:text-ink ${
+              className={`rounded-lg border border-line p-1.5 text-slate2 hover:bg-mist hover:text-ink ${
                 collapsed ? 'mx-auto' : 'ml-auto'
               }`}
             >
-              {collapsed ? '»' : '«'}
+              {collapsed ? <PanelLeftOpen size={18} aria-hidden /> : <PanelLeftClose size={18} aria-hidden />}
             </button>
           </div>
 
@@ -133,9 +141,7 @@ export default function Layout() {
                 title={collapsed ? item.label : undefined}
                 className={sideLink(collapsed)}
               >
-                <span aria-hidden className="w-5 text-center text-base leading-none">
-                  {item.icon}
-                </span>
+                <item.Icon size={18} strokeWidth={2} aria-hidden className="shrink-0" />
                 {!collapsed && <span className="truncate">{item.label}</span>}
               </NavLink>
             ))}
@@ -150,9 +156,7 @@ export default function Layout() {
                 collapsed ? 'justify-center' : ''
               }`}
             >
-              <span aria-hidden className="w-5 text-center text-base leading-none">
-                {theme === 'dark' ? '☀' : '☾'}
-              </span>
+              {theme === 'dark' ? <Sun size={18} aria-hidden className="shrink-0" /> : <Moon size={18} aria-hidden className="shrink-0" />}
               {!collapsed && <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>}
             </button>
             {!collapsed && user?.email && (
@@ -167,9 +171,7 @@ export default function Layout() {
                 collapsed ? 'justify-center' : ''
               }`}
             >
-              <span aria-hidden className="w-5 text-center text-base leading-none">
-                ⎋
-              </span>
+              <LogOut size={18} aria-hidden className="shrink-0" />
               {!collapsed && <span>Sign out</span>}
             </button>
           </div>
@@ -193,9 +195,9 @@ export default function Layout() {
               <button
                 onClick={() => setDrawerOpen(false)}
                 aria-label="Close menu"
-                className="rounded-lg border border-line px-2.5 py-1.5 text-lg leading-none text-ink hover:bg-mist"
+                className="rounded-lg border border-line p-2 text-ink hover:bg-mist"
               >
-                ✕
+                <X size={20} aria-hidden />
               </button>
             </div>
 
@@ -211,9 +213,7 @@ export default function Layout() {
                     }`
                   }
                 >
-                  <span aria-hidden className="w-5 text-center text-base leading-none">
-                    {item.icon}
-                  </span>
+                  <item.Icon size={18} strokeWidth={2} aria-hidden className="shrink-0" />
                   {item.label}
                 </NavLink>
               ))}
@@ -229,9 +229,7 @@ export default function Layout() {
                 onClick={signOut}
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-ink hover:bg-mist"
               >
-                <span aria-hidden className="w-5 text-center text-base leading-none">
-                  ⎋
-                </span>
+                <LogOut size={18} aria-hidden className="shrink-0" />
                 Sign out
               </button>
             </div>
@@ -256,9 +254,7 @@ export default function Layout() {
                 }`
               }
             >
-              <span aria-hidden className="text-base leading-none">
-                {item.icon}
-              </span>
+              <item.Icon size={20} strokeWidth={2} aria-hidden />
               {item.label}
             </NavLink>
           ))}

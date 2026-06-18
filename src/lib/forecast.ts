@@ -19,6 +19,10 @@ export interface ForecastDay {
   date: string
   available: number // credit limit minus balance owed
   owed: number
+  // Surplus that has accumulated once the card is fully paid: any payment beyond
+  // a zero balance spills into the "vault" instead of being lost. It sits there
+  // (savings / debt snowball / spending — decided later) and only ever grows.
+  vault: number
   events: ForecastEvent[]
 }
 
@@ -31,6 +35,7 @@ export interface ForecastResult {
   endAvailable: number
   lowestAvailable: { date: string; available: number }
   firstOverLimit: string | null
+  endVault: number
   upcoming: ForecastEvent[]
 }
 
@@ -181,8 +186,9 @@ export function buildForecast(params: {
     }
   }
 
-  // Walk day by day, tracking the balance owed.
+  // Walk day by day, tracking the balance owed and the accumulated vault.
   let owed = startOwed
+  let vault = 0
   const days: ForecastDay[] = []
   let lowestAvailable = { date: format(from, 'yyyy-MM-dd'), available: Math.round((limit - owed) * 100) / 100 }
   let firstOverLimit: string | null = null
@@ -194,9 +200,9 @@ export function buildForecast(params: {
     const events = byDate.get(key) ?? []
     const delta = events.reduce((s, e) => s + e.amount, 0)
     owed = owed - delta // positive event frees credit (less owed); negative charges it
-    if (owed < 0) owed = 0 // paying past zero maxes the card; excess is cash held elsewhere
+    if (owed < 0) { vault += -owed; owed = 0 } // paying past zero pushes the surplus into the vault
     const available = Math.round((limit - owed) * 100) / 100
-    days.push({ date: key, owed: Math.round(owed * 100) / 100, available, events })
+    days.push({ date: key, owed: Math.round(owed * 100) / 100, available, vault: Math.round(vault * 100) / 100, events })
     if (available < lowestAvailable.available) lowestAvailable = { date: key, available }
     if (available < 0 && !firstOverLimit) firstOverLimit = key
   }
@@ -210,6 +216,7 @@ export function buildForecast(params: {
     endAvailable: Math.round((limit - owed) * 100) / 100,
     lowestAvailable,
     firstOverLimit,
+    endVault: Math.round(vault * 100) / 100,
     upcoming: days.flatMap((d) => d.events).slice(0, 12),
   }
 }
