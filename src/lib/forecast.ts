@@ -144,18 +144,18 @@ export function buildForecast(params: {
   const otherIncome = activeIncome.filter((i) => i.income_type !== 'salary')
   const postTaxGoals = savingsGoals.filter((g) => g.is_active && g.deduction_type === 'post_tax')
 
-  // Salary paydays: remainder after post-tax savings pays down the card.
+  // Salary paydays: show the real movement of money — the full salary lands as
+  // income, then each post-tax savings deduction moves out as its own event. The
+  // net (salary minus savings) is what actually pays the card down, so the
+  // forecast line is unchanged while the breakdown stays fully transparent.
   for (const stream of salaryStreams) {
     for (const d of occurrences(stream.next_date, stream.frequency, from, to)) {
-      let savingsDue = 0
+      push(d, { label: stream.name, amount: Number(stream.amount), kind: 'income' })
       for (const goal of postTaxGoals) {
         if (goal.start_date && isBefore(d, startOfDay(parseISO(goal.start_date)))) continue
         if (goal.end_date && isAfter(d, startOfDay(parseISO(goal.end_date)))) continue
-        savingsDue += Number(goal.amount_per_payslip)
+        push(d, { label: goal.name, amount: -Number(goal.amount_per_payslip), kind: 'savings' })
       }
-      const remainder = Math.max(Number(stream.amount) - savingsDue, 0)
-      const label = savingsDue > 0 ? `${stream.name} (after savings) → card` : `${stream.name} → card`
-      push(d, { label, amount: remainder, kind: 'income' })
     }
   }
 

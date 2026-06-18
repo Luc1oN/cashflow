@@ -110,7 +110,11 @@ describe('buildForecast (credit-card-centric)', () => {
       plannedExpenses: [],
       horizonDays: 10,
     })
-    // remainder 1500 - 500 = 1000 pays card down: owed 2000 -> 1000, available 2000 -> 3000
+    // Breakdown shows the full movement: salary in, savings out…
+    const ev = r.days[5].events
+    expect(ev.find((e) => e.kind === 'income')?.amount).toBe(1500)
+    expect(ev.find((e) => e.kind === 'savings')?.amount).toBe(-500)
+    // …and the net (1500 - 500 = 1000) still pays the card down: 2000 -> 1000, available 3000
     expect(r.days[5].available).toBe(3000)
   })
 
