@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   LayoutGrid, Receipt, FileText, CalendarClock, Wallet, Banknote,
   PiggyBank, Landmark, History, Settings, Menu, X, Sun, Moon, LogOut,
-  PanelLeftClose, PanelLeftOpen, TrendingUp, type LucideIcon,
+  PanelLeftClose, PanelLeftOpen, type LucideIcon,
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
@@ -83,9 +83,7 @@ export default function Layout() {
 
   const Logo = (
     <NavLink to="/" className="flex items-center gap-2 font-display text-xl font-semibold text-ink">
-      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-moss text-paper">
-        <TrendingUp size={16} strokeWidth={2.5} aria-hidden />
-      </span>
+      <img src={`${import.meta.env.BASE_URL}cashflow-icon.svg`} alt="CashFlow" width={28} height={28} className="h-7 w-7 shrink-0 rounded-lg" />
       <span>Cash<span className="text-moss">Flow</span></span>
     </NavLink>
   )
