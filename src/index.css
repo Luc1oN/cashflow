@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --paper: 250 250 247;
+  --surface: 255 255 255;
+  --ink: 27 36 48;
+  --slate2: 91 101 115;
+  --line: 228 226 218;
+  --mist: 241 240 234;
+  --moss: 14 123 95;
+  --mossdeep: 10 92 71;
+  --amber2: 180 84 10;
+  --claret: 179 38 30;
+  --shadow: 27 36 48;
+}
+
+.dark {
+  --paper: 14 18 24;
+  --surface: 22 28 36;
+  --ink: 232 234 237;
+  --slate2: 150 158 170;
+  --line: 45 53 64;
+  --mist: 31 38 48;
+  --moss: 64 196 150;
+  --mossdeep: 122 222 184;
+  --amber2: 233 144 70;
+  --claret: 240 110 100;
+  --shadow: 0 0 0;
+}
+
+body {
+  @apply bg-paper font-body text-ink antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
