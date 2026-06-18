@@ -11,7 +11,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useChartColors } from '../contexts/ThemeContext'
 import { useTable } from '../lib/useTable'
-import { buildForecast, cashPosition, creditCard, netWorth, perMonth } from '../lib/forecast'
+import { buildForecast, cashPosition, creditCard, netWorth, perMonth, type ForecastDay } from '../lib/forecast'
 import { applySettlement, buildSettlementPlan, type SettlementPlan } from '../lib/settle'
 import { money, moneyShort, titleCase } from '../lib/format'
 import type { Account, Bill, BudgetAlert, Expense, Income, Loan, PlannedExpense, Profile, SavingsGoal } from '../lib/types'
@@ -261,11 +261,7 @@ export default function Dashboard() {
               <CartesianGrid stroke={colors.line} strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="date" tickFormatter={(d: string) => format(parseISO(d), 'd MMM')} tick={{ fontSize: 11, fill: colors.slate }} tickLine={false} axisLine={{ stroke: colors.line }} minTickGap={48} />
               <YAxis tickFormatter={(v: number) => moneyShort(v)} tick={{ fontSize: 11, fill: colors.slate, fontFamily: 'IBM Plex Mono' }} tickLine={false} axisLine={false} width={76} />
-              <Tooltip
-                formatter={(v, name) => [money(Number(v)), name === 'scenarioAvailable' ? 'With scenario' : 'Available credit']}
-                labelFormatter={(d) => format(parseISO(String(d)), 'EEEE d MMM yyyy')}
-                contentStyle={{ borderRadius: 8, border: '1px solid rgb(var(--line))', fontSize: 12, background: 'rgb(var(--surface))', color: 'rgb(var(--ink))' }}
-              />
+              <Tooltip cursor={{ stroke: colors.line }} content={<ForecastTooltip />} />
               <ReferenceLine y={0} stroke={colors.claret} strokeDasharray="4 4" label={{ value: 'Over limit', position: 'insideBottomRight', fontSize: 10, fill: colors.claret }} />
               <Area type="monotone" dataKey="available" stroke={colors.moss} strokeWidth={2} fill="url(#availFill)" />
               {scenarioForecast && (
@@ -449,6 +445,50 @@ export default function Dashboard() {
           </div>
         )}
       </Modal>
+    </div>
+  )
+}
+
+// Custom forecast tooltip: shows the running available credit plus a breakdown
+// of exactly what happens on the hovered day (salary in, bills/planned out, …),
+// so peaks and troughs are self-explanatory.
+function ForecastTooltip({ active, payload }: {
+  active?: boolean
+  payload?: Array<{ payload: ForecastDay & { scenarioAvailable?: number } }>
+}) {
+  if (!active || !payload || payload.length === 0) return null
+  const day = payload[0].payload
+  const events = day.events ?? []
+  const net = events.reduce((s, e) => s + e.amount, 0)
+  return (
+    <div className="min-w-[200px] max-w-[280px] rounded-lg border border-line bg-surface p-3 text-xs shadow-card">
+      <p className="mb-1.5 font-medium text-ink">{format(parseISO(day.date), 'EEEE d MMM yyyy')}</p>
+      <div className="flex items-center justify-between gap-4">
+        <span className="text-slate2">Available credit</span>
+        <span className="font-num font-semibold text-ink">{money(day.available)}</span>
+      </div>
+      {typeof day.scenarioAvailable === 'number' && (
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-amber2">With scenario</span>
+          <span className="font-num text-amber2">{money(day.scenarioAvailable)}</span>
+        </div>
+      )}
+      {events.length > 0 ? (
+        <div className="mt-2 space-y-1 border-t border-line pt-2">
+          {events.map((e, i) => (
+            <div key={i} className="flex items-center justify-between gap-4">
+              <span className="min-w-0 truncate text-ink" title={`${e.label} · ${titleCase(e.kind)}`}>{e.label}</span>
+              <Money value={e.amount} signed />
+            </div>
+          ))}
+          <div className="mt-1 flex items-center justify-between gap-4 border-t border-line pt-1 font-medium">
+            <span className="text-slate2">Net change</span>
+            <Money value={net} signed />
+          </div>
+        </div>
+      ) : (
+        <p className="mt-2 border-t border-line pt-2 text-slate2">No money events this day</p>
+      )}
     </div>
   )
 }
