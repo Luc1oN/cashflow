@@ -1,106 +1,269 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 
-const primary = [
+type NavItem = { to: string; label: string; icon: string; exact?: boolean }
+
+// Single source of truth for navigation. Order here is the order shown in the
+// desktop sidebar and the mobile slide-out menu.
+const nav: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: '◈', exact: true },
   { to: '/spending', label: 'Spending', icon: '✦' },
   { to: '/bills', label: 'Bills', icon: '▤' },
   { to: '/planned', label: 'Planned', icon: '◷' },
+  { to: '/accounts', label: 'Accounts', icon: '▦' },
+  { to: '/income', label: 'Income', icon: '⊕' },
+  { to: '/savings', label: 'Savings', icon: '◉' },
+  { to: '/loans', label: 'Loans', icon: '⊘' },
+  { to: '/history', label: 'History', icon: '↺' },
+  { to: '/settings', label: 'Settings', icon: '⚙' },
 ]
-const secondary = [
-  { to: '/accounts', label: 'Accounts' },
-  { to: '/income', label: 'Income' },
-  { to: '/savings', label: 'Savings' },
-  { to: '/loans', label: 'Loans' },
-  { to: '/history', label: 'History' },
-  { to: '/settings', label: 'Settings' },
-]
+
+// The four items pinned to the mobile bottom tab bar (in this order).
+const bottomBarPaths = ['/', '/planned', '/accounts', '/savings']
+const bottomBar = bottomBarPaths
+  .map((p) => nav.find((n) => n.to === p))
+  .filter((n): n is NavItem => Boolean(n))
+
+const COLLAPSE_KEY = 'cf_sidebar_collapsed'
 
 export default function Layout() {
   const { user, signOut } = useAuth()
   const { theme, toggle } = useTheme()
+  const location = useLocation()
 
-  const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `rounded-lg px-3 py-1.5 font-medium transition-colors ${isActive ? 'bg-moss/10 text-mossdeep' : 'text-slate2 hover:bg-mist hover:text-ink'}`
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(COLLAPSE_KEY) === '1'
+    } catch {
+      return false
+    }
+  })
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  // Persist the desktop collapsed/expanded preference.
+  useEffect(() => {
+    try {
+      localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0')
+    } catch {
+      /* ignore */
+    }
+  }, [collapsed])
+
+  // Close the mobile drawer on navigation.
+  useEffect(() => {
+    setDrawerOpen(false)
+  }, [location.pathname])
+
+  // Lock background scroll while the mobile drawer is open, and allow Escape to close.
+  useEffect(() => {
+    if (!drawerOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setDrawerOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = prev
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [drawerOpen])
+
+  const sideLink = (collapsedRail: boolean) => ({ isActive }: { isActive: boolean }) =>
+    `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+      isActive ? 'bg-moss/10 text-mossdeep' : 'text-slate2 hover:bg-mist hover:text-ink'
+    } ${collapsedRail ? 'justify-center' : ''}`
+
+  const Logo = (
+    <NavLink to="/" className="font-display text-xl font-semibold text-ink">
+      Cash<span className="text-moss">Flow</span>
+    </NavLink>
+  )
 
   return (
-    <div className="min-h-screen bg-paper pb-20 sm:pb-0">
-      <header className="sticky top-0 z-40 border-b border-line bg-surface/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
-          <NavLink to="/" className="font-display text-xl font-semibold text-ink">
-            Cash<span className="text-moss">Flow</span>
-          </NavLink>
-          <nav className="hidden flex-1 flex-wrap gap-1 text-sm sm:flex" aria-label="Main">
-            {[...primary, ...secondary].map((item) => (
-              <NavLink key={item.to} to={item.to} end={(item as { exact?: boolean }).exact} className={linkClass}>
-                {item.label}
+    <div className="min-h-screen bg-paper">
+      {/* Mobile top bar */}
+      <header className="sticky top-0 z-40 flex items-center gap-3 border-b border-line bg-surface/90 px-4 py-3 backdrop-blur sm:hidden">
+        <button
+          onClick={() => setDrawerOpen(true)}
+          aria-label="Open menu"
+          className="rounded-lg border border-line px-2.5 py-1.5 text-lg leading-none text-ink hover:bg-mist"
+        >
+          ☰
+        </button>
+        {Logo}
+        <button
+          onClick={toggle}
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          className="ml-auto rounded-lg border border-line px-2.5 py-1.5 text-slate2 hover:bg-mist hover:text-ink"
+        >
+          {theme === 'dark' ? '☀' : '☾'}
+        </button>
+      </header>
+
+      <div className="sm:flex">
+        {/* Desktop collapsible sidebar */}
+        <aside
+          className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-line bg-surface transition-[width] duration-200 sm:flex ${
+            collapsed ? 'sm:w-16' : 'sm:w-56'
+          }`}
+        >
+          <div className="flex items-center gap-2 border-b border-line px-3 py-3.5">
+            {!collapsed && Logo}
+            <button
+              onClick={() => setCollapsed((c) => !c)}
+              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              title={collapsed ? 'Expand' : 'Collapse'}
+              className={`rounded-lg border border-line px-2 py-1 text-slate2 hover:bg-mist hover:text-ink ${
+                collapsed ? 'mx-auto' : 'ml-auto'
+              }`}
+            >
+              {collapsed ? '»' : '«'}
+            </button>
+          </div>
+
+          <nav className="flex-1 space-y-1 overflow-y-auto p-2" aria-label="Main">
+            {nav.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.exact}
+                title={collapsed ? item.label : undefined}
+                className={sideLink(collapsed)}
+              >
+                <span aria-hidden className="w-5 text-center text-base leading-none">
+                  {item.icon}
+                </span>
+                {!collapsed && <span className="truncate">{item.label}</span>}
               </NavLink>
             ))}
           </nav>
-          <div className="ml-auto flex items-center gap-2 text-sm">
+
+          <div className="space-y-1 border-t border-line p-2">
             <button
               onClick={toggle}
               aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              className="rounded-lg border border-line px-2.5 py-1.5 text-slate2 hover:bg-mist hover:text-ink"
+              title={collapsed ? (theme === 'dark' ? 'Light mode' : 'Dark mode') : undefined}
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate2 hover:bg-mist hover:text-ink ${
+                collapsed ? 'justify-center' : ''
+              }`}
             >
-              {theme === 'dark' ? '☀' : '☾'}
+              <span aria-hidden className="w-5 text-center text-base leading-none">
+                {theme === 'dark' ? '☀' : '☾'}
+              </span>
+              {!collapsed && <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>}
             </button>
-            <span className="hidden text-slate2 lg:inline">{user?.email}</span>
-            <button onClick={signOut} className="hidden rounded-lg border border-line px-3 py-1.5 font-medium text-ink hover:bg-mist sm:block">
-              Sign out
+            {!collapsed && user?.email && (
+              <div className="truncate px-3 text-xs text-slate2" title={user.email}>
+                {user.email}
+              </div>
+            )}
+            <button
+              onClick={signOut}
+              title={collapsed ? 'Sign out' : undefined}
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-ink hover:bg-mist ${
+                collapsed ? 'justify-center' : ''
+              }`}
+            >
+              <span aria-hidden className="w-5 text-center text-base leading-none">
+                ⎋
+              </span>
+              {!collapsed && <span>Sign out</span>}
             </button>
           </div>
-        </div>
-      </header>
+        </aside>
 
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
-        <Outlet />
-      </main>
+        {/* Main content */}
+        <div className="min-w-0 flex-1">
+          <main className="mx-auto max-w-6xl px-4 pb-24 pt-6 sm:pb-10 sm:pt-8">
+            <Outlet />
+          </main>
+        </div>
+      </div>
+
+      {/* Mobile slide-out menu (full navigation) */}
+      {drawerOpen && (
+        <div className="fixed inset-0 z-50 sm:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+          <div className="absolute inset-0 bg-ink/40" onClick={() => setDrawerOpen(false)} />
+          <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85%] flex-col bg-surface shadow-card">
+            <div className="flex items-center justify-between border-b border-line px-4 py-3">
+              {Logo}
+              <button
+                onClick={() => setDrawerOpen(false)}
+                aria-label="Close menu"
+                className="rounded-lg border border-line px-2.5 py-1.5 text-lg leading-none text-ink hover:bg-mist"
+              >
+                ✕
+              </button>
+            </div>
+
+            <nav className="flex-1 space-y-1 overflow-y-auto p-2" aria-label="All pages">
+              {nav.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.exact}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium ${
+                      isActive ? 'bg-moss/10 text-mossdeep' : 'text-ink hover:bg-mist'
+                    }`
+                  }
+                >
+                  <span aria-hidden className="w-5 text-center text-base leading-none">
+                    {item.icon}
+                  </span>
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
+
+            <div className="border-t border-line p-2">
+              {user?.email && (
+                <div className="truncate px-3 py-1 text-xs text-slate2" title={user.email}>
+                  {user.email}
+                </div>
+              )}
+              <button
+                onClick={signOut}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-ink hover:bg-mist"
+              >
+                <span aria-hidden className="w-5 text-center text-base leading-none">
+                  ⎋
+                </span>
+                Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mobile bottom tab bar */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur sm:hidden" aria-label="Main">
-        <div className="grid grid-cols-5">
-          {primary.map((item) => (
+      <nav
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur sm:hidden"
+        aria-label="Quick navigation"
+      >
+        <div className="grid grid-cols-4">
+          {bottomBar.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.exact}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium ${isActive ? 'text-mossdeep' : 'text-slate2'}`
+                `flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium ${
+                  isActive ? 'text-mossdeep' : 'text-slate2'
+                }`
               }
             >
-              <span aria-hidden className="text-base leading-none">{item.icon}</span>
+              <span aria-hidden className="text-base leading-none">
+                {item.icon}
+              </span>
               {item.label}
             </NavLink>
           ))}
-          <MoreMenu />
         </div>
       </nav>
-    </div>
-  )
-}
-
-function MoreMenu() {
-  return (
-    <div className="group relative flex flex-col items-center">
-      <button className="flex w-full flex-col items-center gap-0.5 py-2 text-[11px] font-medium text-slate2" aria-haspopup="true">
-        <span aria-hidden className="text-base leading-none">⋯</span>
-        More
-      </button>
-      <div className="invisible absolute bottom-full right-2 mb-2 w-40 rounded-xl border border-line bg-surface p-1 shadow-card opacity-0 transition-all group-focus-within:visible group-focus-within:opacity-100">
-        {secondary.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              `block rounded-lg px-3 py-2 text-sm font-medium ${isActive ? 'bg-moss/10 text-mossdeep' : 'text-ink hover:bg-mist'}`
-            }
-          >
-            {item.label}
-          </NavLink>
-        ))}
-      </div>
     </div>
   )
 }
