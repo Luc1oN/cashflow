@@ -6,6 +6,7 @@ import {
   Area, AreaChart, CartesianGrid, Line, ReferenceDot, ReferenceLine,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
+import { Pencil } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
@@ -49,6 +50,11 @@ export default function Dashboard() {
 
   const [horizon, setHorizon] = useState<number | null>(null)
   const activeHorizon = horizon ?? profile?.default_horizon ?? 90
+
+  const [editBalanceOpen, setEditBalanceOpen] = useState(false)
+  const [balanceInput, setBalanceInput] = useState('')
+  const [savingBalance, setSavingBalance] = useState(false)
+  const [balanceError, setBalanceError] = useState<string | null>(null)
 
   const [settlePlan, setSettlePlan] = useState<SettlementPlan | null>(null)
   const [settling, setSettling] = useState(false)
@@ -94,6 +100,31 @@ export default function Dashboard() {
   const monthlyIncome = income.rows.filter((i) => i.is_active).reduce((s, i) => s + perMonth(Number(i.amount), i.frequency), 0)
   const monthlyBills = bills.rows.filter((b) => b.is_active).reduce((s, b) => s + perMonth(Number(b.amount), b.frequency), 0)
   const pctUsed = card && Number(card.credit_limit) > 0 ? (Number(card.balance) / Number(card.credit_limit)) * 100 : 0
+
+  const openEditBalance = () => {
+    if (!card) return
+    setBalanceError(null)
+    setBalanceInput(String(Number(card.balance)))
+    setEditBalanceOpen(true)
+  }
+
+  const saveBalance = async () => {
+    if (!card) return
+    const v = Number(balanceInput)
+    if (!Number.isFinite(v) || v < 0) {
+      setBalanceError('Enter a valid amount (0 or more).')
+      return
+    }
+    setSavingBalance(true)
+    setBalanceError(null)
+    try {
+      await accounts.update(card.id, { balance: v })
+      setEditBalanceOpen(false)
+    } catch (err) {
+      setBalanceError(err instanceof Error ? err.message : 'Could not save balance.')
+    }
+    setSavingBalance(false)
+  }
 
   const openSettle = () => {
     setSettleError(null)
@@ -187,6 +218,14 @@ export default function Dashboard() {
               <p className="text-xs font-medium uppercase tracking-wide text-slate2">Credit card balance · {card.name}</p>
               <p className="mt-1 font-num text-5xl font-semibold tracking-tight text-ink">
                 {money(Number(card.balance))} <span className="align-middle text-base font-normal text-slate2">owed</span>
+                <button
+                  onClick={openEditBalance}
+                  aria-label="Edit card balance"
+                  title="Edit balance"
+                  className="ml-2 align-middle text-slate2 transition-colors hover:text-ink"
+                >
+                  <Pencil size={18} aria-hidden className="inline" />
+                </button>
               </p>
               <p className="mt-3 text-sm text-slate2">
                 <span className="font-num font-semibold text-mossdeep">{money(forecast.startAvailable)}</span> available of {money(forecast.limit)} limit
@@ -417,6 +456,28 @@ export default function Dashboard() {
           <div className="flex justify-between pt-1">
             <Button variant="ghost" onClick={() => setScenario([])} disabled={scenario.length === 0}>Clear scenario</Button>
             <Button onClick={() => setScenarioOpen(false)}>Done</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit card balance modal */}
+      <Modal title="Update card balance" open={editBalanceOpen} onClose={() => setEditBalanceOpen(false)}>
+        <div className="space-y-4 text-sm">
+          <p className="text-slate2">Set the current balance owed on {card?.name ?? 'your card'}. This updates the forecast straight away.</p>
+          <Field label="Balance owed" error={balanceError ?? undefined}>
+            <TextInput
+              type="number"
+              step="0.01"
+              min="0"
+              autoFocus
+              value={balanceInput}
+              onChange={(e) => setBalanceInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') saveBalance() }}
+            />
+          </Field>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="ghost" onClick={() => setEditBalanceOpen(false)}>Cancel</Button>
+            <Button onClick={saveBalance} disabled={savingBalance}>{savingBalance ? 'Saving…' : 'Save balance'}</Button>
           </div>
         </div>
       </Modal>
