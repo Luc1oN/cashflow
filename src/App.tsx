@@ -7,6 +7,7 @@ import { setCurrency, type CurrencyCode } from './lib/format'
 import AuthPage from './pages/AuthPage'
 
 const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Advisor = lazy(() => import('./pages/Advisor'))
 const Accounts = lazy(() => import('./pages/Accounts'))
 const IncomePage = lazy(() => import('./pages/IncomePage'))
 const Bills = lazy(() => import('./pages/Bills'))
@@ -47,6 +48,7 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Suspense fallback={<PageFallback />}><Dashboard /></Suspense>} />
+          <Route path="advisor" element={<Suspense fallback={<PageFallback />}><Advisor /></Suspense>} />
           <Route path="accounts" element={<Suspense fallback={<PageFallback />}><Accounts /></Suspense>} />
           <Route path="income" element={<Suspense fallback={<PageFallback />}><IncomePage /></Suspense>} />
           <Route path="bills" element={<Suspense fallback={<PageFallback />}><Bills /></Suspense>} />

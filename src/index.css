@@ -36,6 +36,27 @@ body {
   @apply bg-paper font-body text-ink antialiased;
 }
 
+/* Markdown rendering for AI advisor replies */
+.prose-cf { @apply text-sm leading-relaxed text-ink; }
+.prose-cf > :first-child { margin-top: 0; }
+.prose-cf > :last-child { margin-bottom: 0; }
+.prose-cf p { @apply my-2; }
+.prose-cf h1, .prose-cf h2, .prose-cf h3 { @apply mb-1.5 mt-3 font-display font-semibold text-ink; }
+.prose-cf h1 { @apply text-base; }
+.prose-cf h2 { @apply text-base; }
+.prose-cf h3 { @apply text-sm; }
+.prose-cf ul { @apply my-2 list-disc space-y-1 pl-5; }
+.prose-cf ol { @apply my-2 list-decimal space-y-1 pl-5; }
+.prose-cf li { @apply pl-0.5; }
+.prose-cf strong { @apply font-semibold text-ink; }
+.prose-cf a { @apply text-mossdeep underline; }
+.prose-cf code { @apply rounded bg-surface px-1 py-0.5 font-num text-[0.85em]; }
+.prose-cf hr { @apply my-3 border-line; }
+.prose-cf blockquote { @apply border-l-2 border-line pl-3 text-slate2; }
+.prose-cf table { @apply my-2 w-full border-collapse text-xs; }
+.prose-cf th, .prose-cf td { @apply border border-line px-2 py-1 text-left; }
+.prose-cf th { @apply bg-surface font-semibold; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

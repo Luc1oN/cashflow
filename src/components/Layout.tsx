@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   LayoutGrid, Receipt, FileText, CalendarClock, Wallet, Banknote,
   PiggyBank, Landmark, History, Settings, Menu, X, Sun, Moon, LogOut,
-  PanelLeftClose, PanelLeftOpen, type LucideIcon,
+  PanelLeftClose, PanelLeftOpen, Sparkles, type LucideIcon,
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
@@ -14,6 +14,7 @@ type NavItem = { to: string; label: string; Icon: LucideIcon; exact?: boolean }
 // desktop sidebar and the mobile slide-out menu.
 const nav: NavItem[] = [
   { to: '/', label: 'Dashboard', Icon: LayoutGrid, exact: true },
+  { to: '/advisor', label: 'Advisor', Icon: Sparkles },
   { to: '/spending', label: 'Spending', Icon: Receipt },
   { to: '/bills', label: 'Bills', Icon: FileText },
   { to: '/planned', label: 'Planned', Icon: CalendarClock },
