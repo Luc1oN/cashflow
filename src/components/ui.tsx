@@ -2,7 +2,7 @@ import { type ReactNode, type FormEvent, useEffect, useRef, useState } from 'rea
 import { money } from '../lib/format'
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-xl border border-line bg-surface shadow-card ${className}`}>{children}</div>
+  return <div className={`rounded-[18px] border border-line bg-surface shadow-card ${className}`}>{children}</div>
 }
 
 export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: ReactNode }) {
@@ -26,7 +26,7 @@ export function Button({ children, onClick, type = 'button', variant = 'primary'
   className?: string
 }) {
   const styles = {
-    primary: 'bg-moss text-paper hover:bg-mossdeep dark:text-paper',
+    primary: 'bg-accent text-on-accent hover:bg-accent-strong',
     ghost: 'border border-line bg-surface text-ink hover:bg-mist',
     danger: 'bg-surface border border-line text-claret hover:border-claret/40',
   }[variant]
@@ -35,7 +35,7 @@ export function Button({ children, onClick, type = 'button', variant = 'primary'
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moss ${styles} ${className}`}
+      className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${styles} ${className}`}
     >
       {children}
     </button>
@@ -52,7 +52,7 @@ export function Field({ label, children, error }: { label: string; children: Rea
   )
 }
 
-const inputClass = 'w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-slate2/70 focus:outline-none focus:ring-2 focus:ring-moss/40'
+const inputClass = 'w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-slate2/70 focus:outline-none focus:ring-2 focus:ring-accent/40'
 
 export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={inputClass} />
@@ -74,7 +74,7 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${checked ? 'bg-moss' : 'bg-line'}`}
+        className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${checked ? 'bg-accent' : 'bg-line'}`}
       >
         <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface transition-all ${checked ? 'left-[18px]' : 'left-0.5'}`} />
       </button>

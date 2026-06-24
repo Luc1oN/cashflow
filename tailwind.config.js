@@ -1,10 +1,14 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
-  darkMode: 'class',
+  darkMode: ['selector', '.midnight'],
   theme: {
     extend: {
       colors: {
+        accent: 'rgb(var(--accent) / <alpha-value>)',
+        'accent-strong': 'rgb(var(--accent-strong) / <alpha-value>)',
+        'accent-soft': 'rgb(var(--accent-soft) / <alpha-value>)',
+        'on-accent': 'rgb(var(--on-accent) / <alpha-value>)',
         paper: 'rgb(var(--paper) / <alpha-value>)',
         surface: 'rgb(var(--surface) / <alpha-value>)',
         ink: 'rgb(var(--ink) / <alpha-value>)',
@@ -18,9 +22,9 @@ export default {
         violet: 'rgb(var(--violet) / <alpha-value>)',
       },
       fontFamily: {
-        display: ['Fraunces', 'Georgia', 'serif'],
-        body: ['Inter', 'system-ui', 'sans-serif'],
-        num: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
+        display: ['Geist', 'system-ui', 'sans-serif'],
+        body: ['Geist', 'system-ui', 'sans-serif'],
+        num: ['"Geist Mono"', 'ui-monospace', 'monospace'],
       },
       boxShadow: {
         card: '0 1px 2px rgb(var(--shadow) / 0.06), 0 4px 16px rgb(var(--shadow) / 0.05)',

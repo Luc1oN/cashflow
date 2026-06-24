@@ -2,33 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Cosmic Orange — default theme (warm, iPhone-17-Pro inspired).
+   Accent (orange) is distinct from positive/income (green = moss). */
 :root {
-  --paper: 250 250 247;
-  --surface: 255 255 255;
-  --ink: 27 36 48;
-  --slate2: 91 101 115;
-  --line: 228 226 218;
-  --mist: 241 240 234;
-  --moss: 14 123 95;
-  --mossdeep: 10 92 71;
-  --amber2: 180 84 10;
-  --claret: 179 38 30;
-  --violet: 124 92 200;
-  --shadow: 27 36 48;
+  --paper: 243 236 228;     /* bg  #f3ece4 */
+  --surface: 255 253 249;   /* surface #fffdf9 */
+  --ink: 42 26 16;          /* text #2a1a10 */
+  --slate2: 125 106 89;     /* muted #7d6a59 */
+  --line: 232 220 203;      /* border #e8dccb */
+  --mist: 241 231 218;      /* chip/subtle #f1e7da */
+  --moss: 31 138 91;        /* positive #1f8a5b */
+  --mossdeep: 23 110 73;    /* positive-strong */
+  --amber2: 189 122 28;     /* warn #bd7a1c */
+  --claret: 192 54 44;      /* negative #c0362c */
+  --violet: 124 92 200;     /* vault */
+  --accent: 224 99 58;      /* accent #e0633a */
+  --accent-strong: 194 76 34; /* #c24c22 */
+  --accent-soft: 251 227 214; /* #fbe3d6 */
+  --on-accent: 255 255 255;
+  --shadow: 90 45 15;
 }
 
-.dark {
-  --paper: 14 18 24;
-  --surface: 22 28 36;
-  --ink: 232 234 237;
-  --slate2: 150 158 170;
-  --line: 45 53 64;
-  --mist: 31 38 48;
-  --moss: 64 196 150;
-  --mossdeep: 122 222 184;
-  --amber2: 233 144 70;
-  --claret: 240 110 100;
+/* Midnight — professional midnight-blue dark theme. */
+.midnight {
+  --paper: 7 11 20;         /* bg #070b14 */
+  --surface: 15 23 42;      /* surface #0f172a */
+  --ink: 230 236 247;       /* text #e6ecf7 */
+  --slate2: 132 146 173;    /* muted #8492ad */
+  --line: 35 48 77;         /* border #23304d */
+  --mist: 22 32 58;         /* chip/surface2 #16203a */
+  --moss: 52 211 153;       /* positive #34d399 */
+  --mossdeep: 110 231 183;
+  --amber2: 251 191 36;     /* warn #fbbf24 */
+  --claret: 251 113 133;    /* negative #fb7185 */
   --violet: 167 139 250;
+  --accent: 59 130 246;     /* accent #3b82f6 */
+  --accent-strong: 96 165 250; /* #60a5fa */
+  --accent-soft: 22 40 75;  /* blue tint ≈ accent @16% on surface */
+  --on-accent: 255 255 255;
   --shadow: 0 0 0;
 }
 

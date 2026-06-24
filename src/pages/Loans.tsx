@@ -68,7 +68,7 @@ export default function Loans() {
               <button
                 key={l.id}
                 onClick={() => setSelectedId(l.id)}
-                className={`rounded-lg border px-3 py-1.5 text-sm font-medium ${selected?.id === l.id ? 'border-moss bg-moss/10 text-mossdeep' : 'border-line bg-surface text-slate2 hover:text-ink'}`}
+                className={`rounded-lg border px-3 py-1.5 text-sm font-medium ${selected?.id === l.id ? 'border-accent bg-accent-soft text-accent' : 'border-line bg-surface text-slate2 hover:text-ink'}`}
               >
                 {l.name}{!l.is_active && ' (inactive)'}
               </button>
@@ -113,7 +113,7 @@ export default function Loans() {
                       </defs>
                       <CartesianGrid stroke="rgb(var(--line))" strokeDasharray="3 3" vertical={false} />
                       <XAxis dataKey="date" tickFormatter={(d: string) => format(parseISO(d), 'MMM yy')} tick={{ fontSize: 11, fill: 'rgb(var(--slate2))' }} tickLine={false} axisLine={{ stroke: 'rgb(var(--line))' }} minTickGap={48} />
-                      <YAxis tickFormatter={(v: number) => moneyShort(v)} tick={{ fontSize: 11, fill: 'rgb(var(--slate2))', fontFamily: 'IBM Plex Mono' }} tickLine={false} axisLine={false} width={72} />
+                      <YAxis tickFormatter={(v: number) => moneyShort(v)} tick={{ fontSize: 11, fill: 'rgb(var(--slate2))', fontFamily: 'Geist Mono' }} tickLine={false} axisLine={false} width={72} />
                       <Tooltip formatter={(v) => [money(Number(v)), 'Balance']} labelFormatter={(d) => format(parseISO(String(d)), 'd MMM yyyy')} contentStyle={{ borderRadius: 8, border: '1px solid rgb(var(--line))', fontSize: 12, background: 'rgb(var(--surface))', color: 'rgb(var(--ink))' }} />
                       <Area type="monotone" dataKey="balance" stroke="rgb(var(--amber2))" strokeWidth={2} fill="url(#loanFill)" />
                     </AreaChart>

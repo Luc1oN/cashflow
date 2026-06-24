@@ -162,7 +162,7 @@ export default function Advisor() {
           <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-4">
             {messages.length === 0 && historyLoaded && (
               <div className="flex h-full flex-col items-center justify-center text-center">
-                <span className="grid h-12 w-12 place-items-center rounded-xl bg-moss/10 text-mossdeep">
+                <span className="grid h-12 w-12 place-items-center rounded-xl bg-accent-soft text-accent">
                   <Sparkles size={24} aria-hidden />
                 </span>
                 <p className="mt-3 max-w-sm text-sm text-slate2">
@@ -175,7 +175,7 @@ export default function Advisor() {
             {messages.map((m, i) => (
               <div key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
                 {m.role === 'user' ? (
-                  <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-moss px-3.5 py-2 text-sm text-paper">
+                  <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-accent px-3.5 py-2 text-sm text-on-accent">
                     {m.content}
                   </div>
                 ) : (
@@ -206,7 +206,7 @@ export default function Advisor() {
                 key={qa.label}
                 onClick={() => send(qa.prompt, qa.mode)}
                 disabled={streaming}
-                className="rounded-full border border-line px-3 py-1 text-xs font-medium text-slate2 transition-colors hover:border-moss/40 hover:text-ink disabled:opacity-50"
+                className="rounded-full border border-line px-3 py-1 text-xs font-medium text-slate2 transition-colors hover:border-accent/40 hover:text-ink disabled:opacity-50"
               >
                 {qa.label}
               </button>
@@ -226,7 +226,7 @@ export default function Advisor() {
               }}
               rows={1}
               placeholder="Ask about your finances…"
-              className="max-h-32 min-h-[40px] flex-1 resize-none rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-slate2 focus:border-moss focus:outline-none"
+              className="max-h-32 min-h-[40px] flex-1 resize-none rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-slate2 focus:border-accent focus:outline-none"
             />
             {streaming ? (
               <Button variant="ghost" onClick={stop}><Square size={16} className="mr-1 inline" aria-hidden /> Stop</Button>

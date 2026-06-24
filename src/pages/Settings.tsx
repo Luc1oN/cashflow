@@ -14,7 +14,7 @@ const HORIZONS = [30, 60, 90, 180, 365]
 
 export default function Settings() {
   const { user, signOut } = useAuth()
-  const { theme, toggle } = useTheme()
+  const { theme, setTheme } = useTheme()
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const fileInput = useRef<HTMLInputElement>(null)
@@ -114,7 +114,12 @@ export default function Settings() {
               {HORIZONS.map((h) => <option key={h} value={h}>{h} days</option>)}
             </Select>
           </Field>
-          <Toggle checked={theme === 'dark'} onChange={toggle} label="Dark mode" />
+          <Field label="Theme">
+            <Select value={theme} onChange={(e) => setTheme(e.target.value as 'cosmic' | 'midnight')}>
+              <option value="cosmic">Cosmic — warm light</option>
+              <option value="midnight">Midnight — blue dark</option>
+            </Select>
+          </Field>
           <div className="border-t border-line pt-4">
             <Button variant="ghost" onClick={signOut}>Sign out</Button>
           </div>

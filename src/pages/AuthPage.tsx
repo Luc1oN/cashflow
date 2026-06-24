@@ -26,7 +26,7 @@ export default function AuthPage() {
     <div className="flex min-h-screen items-center justify-center bg-paper px-4">
       <div className="w-full max-w-sm">
         <h1 className="mb-1 text-center font-display text-4xl font-semibold text-ink">
-          Cash<span className="text-moss">Flow</span>
+          Cash<span className="text-accent">Flow</span>
         </h1>
         <p className="mb-8 text-center text-sm text-slate2">Know where every payday goes.</p>
         <form onSubmit={submit} className="space-y-4 rounded-xl border border-line bg-surface p-6 shadow-card">

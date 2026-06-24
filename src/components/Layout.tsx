@@ -79,13 +79,13 @@ export default function Layout() {
 
   const sideLink = (collapsedRail: boolean) => ({ isActive }: { isActive: boolean }) =>
     `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-      isActive ? 'bg-moss/10 text-mossdeep' : 'text-slate2 hover:bg-mist hover:text-ink'
+      isActive ? 'bg-accent-soft text-accent' : 'text-slate2 hover:bg-mist hover:text-ink'
     } ${collapsedRail ? 'justify-center' : ''}`
 
   const Logo = (
     <NavLink to="/" className="flex items-center gap-2 font-display text-xl font-semibold text-ink">
       <img src={`${import.meta.env.BASE_URL}cashflow-icon.svg`} alt="CashFlow" width={28} height={28} className="h-7 w-7 shrink-0 rounded-lg" />
-      <span>Cash<span className="text-moss">Flow</span></span>
+      <span>Cash<span className="text-accent">Flow</span></span>
     </NavLink>
   )
 
@@ -103,10 +103,10 @@ export default function Layout() {
         {Logo}
         <button
           onClick={toggle}
-          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          aria-label={theme === 'midnight' ? 'Switch to light mode' : 'Switch to dark mode'}
           className="ml-auto rounded-lg border border-line p-2 text-slate2 hover:bg-mist hover:text-ink"
         >
-          {theme === 'dark' ? <Sun size={18} aria-hidden /> : <Moon size={18} aria-hidden />}
+          {theme === 'midnight' ? <Sun size={18} aria-hidden /> : <Moon size={18} aria-hidden />}
         </button>
       </header>
 
@@ -149,14 +149,14 @@ export default function Layout() {
           <div className="space-y-1 border-t border-line p-2">
             <button
               onClick={toggle}
-              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              title={collapsed ? (theme === 'dark' ? 'Light mode' : 'Dark mode') : undefined}
+              aria-label={theme === 'midnight' ? 'Switch to light mode' : 'Switch to dark mode'}
+              title={collapsed ? (theme === 'midnight' ? 'Light mode' : 'Dark mode') : undefined}
               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate2 hover:bg-mist hover:text-ink ${
                 collapsed ? 'justify-center' : ''
               }`}
             >
-              {theme === 'dark' ? <Sun size={18} aria-hidden className="shrink-0" /> : <Moon size={18} aria-hidden className="shrink-0" />}
-              {!collapsed && <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>}
+              {theme === 'midnight' ? <Sun size={18} aria-hidden className="shrink-0" /> : <Moon size={18} aria-hidden className="shrink-0" />}
+              {!collapsed && <span>{theme === 'midnight' ? 'Light mode' : 'Dark mode'}</span>}
             </button>
             {!collapsed && user?.email && (
               <div className="truncate px-3 text-xs text-slate2" title={user.email}>
@@ -208,7 +208,7 @@ export default function Layout() {
                   end={item.exact}
                   className={({ isActive }) =>
                     `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium ${
-                      isActive ? 'bg-moss/10 text-mossdeep' : 'text-ink hover:bg-mist'
+                      isActive ? 'bg-accent-soft text-accent' : 'text-ink hover:bg-mist'
                     }`
                   }
                 >
@@ -249,7 +249,7 @@ export default function Layout() {
               end={item.exact}
               className={({ isActive }) =>
                 `flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium ${
-                  isActive ? 'text-mossdeep' : 'text-slate2'
+                  isActive ? 'text-accent' : 'text-slate2'
                 }`
               }
             >

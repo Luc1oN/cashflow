@@ -255,7 +255,7 @@ export default function Dashboard() {
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-slate2">Cash position</p>
             <p className="mt-1 font-num text-5xl font-semibold tracking-tight text-ink">{money(cashPosition(accounts.rows))}</p>
-            <p className="mt-2 text-sm text-slate2">Add a credit card on the <Link to="/accounts" className="font-medium text-mossdeep hover:underline">Accounts page</Link> to track it as your hub.</p>
+            <p className="mt-2 text-sm text-slate2">Add a credit card on the <Link to="/accounts" className="font-medium text-accent hover:underline">Accounts page</Link> to track it as your hub.</p>
           </div>
         )}
       </Card>
@@ -273,7 +273,7 @@ export default function Dashboard() {
                 <button
                   key={h}
                   onClick={() => setHorizon(h)}
-                  className={`rounded-lg px-3 py-1 text-xs font-medium ${activeHorizon === h ? 'bg-moss text-paper' : 'bg-mist text-slate2 hover:text-ink'}`}
+                  className={`rounded-lg px-3 py-1 text-xs font-medium ${activeHorizon === h ? 'bg-accent text-on-accent' : 'bg-mist text-slate2 hover:text-ink'}`}
                 >
                   {h}d
                 </button>
@@ -313,7 +313,7 @@ export default function Dashboard() {
               </defs>
               <CartesianGrid stroke={colors.line} strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="date" tickFormatter={(d: string) => format(parseISO(d), 'd MMM')} tick={{ fontSize: 11, fill: colors.slate }} tickLine={false} axisLine={{ stroke: colors.line }} minTickGap={48} />
-              <YAxis tickFormatter={(v: number) => moneyShort(v)} tick={{ fontSize: 11, fill: colors.slate, fontFamily: 'IBM Plex Mono' }} tickLine={false} axisLine={false} width={76} />
+              <YAxis tickFormatter={(v: number) => moneyShort(v)} tick={{ fontSize: 11, fill: colors.slate, fontFamily: 'Geist Mono' }} tickLine={false} axisLine={false} width={76} />
               <Tooltip cursor={{ stroke: colors.line }} content={<ForecastTooltip />} />
               <ReferenceLine y={0} stroke={colors.claret} strokeDasharray="4 4" label={{ value: 'Over limit', position: 'insideBottomRight', fontSize: 10, fill: colors.claret }} />
               {forecast.limit > 0 && (
@@ -392,7 +392,7 @@ export default function Dashboard() {
           <h2 className="mb-3 font-display text-lg font-semibold text-ink">Budgets this month</h2>
           {budgets.rows.filter((b) => b.is_active).length === 0 ? (
             <p className="text-sm text-slate2">
-              No budgets yet — set a safe-to-spend cap on the <Link to="/spending" className="font-medium text-mossdeep hover:underline">Spending page</Link>.
+              No budgets yet — set a safe-to-spend cap on the <Link to="/spending" className="font-medium text-accent hover:underline">Spending page</Link>.
             </p>
           ) : (
             <ul className="space-y-4">
@@ -445,7 +445,7 @@ export default function Dashboard() {
                   <span className="flex items-center gap-3">
                     <Money value={item.direction === 'out' ? -item.amount : item.amount} signed />
                     {item.direction === 'out' && (
-                      <button onClick={() => saveScenarioAsPlanned(item)} className="text-xs font-medium text-mossdeep hover:underline">Save as planned</button>
+                      <button onClick={() => saveScenarioAsPlanned(item)} className="text-xs font-medium text-accent hover:underline">Save as planned</button>
                     )}
                     <button onClick={() => setScenario((s) => s.filter((x) => x.id !== item.id))} aria-label={`Remove ${item.name}`} className="text-slate2 hover:text-claret">✕</button>
                   </span>
@@ -593,7 +593,7 @@ function OnboardingChecklist({ accounts, income, bills, onDismiss }: { accounts:
   ]
   const doneCount = steps.filter((s) => s.done).length
   return (
-    <Card className="mb-6 border-moss/30 p-5">
+    <Card className="mb-6 border-accent/30 p-5">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="font-display text-lg font-semibold text-ink">Get set up — {doneCount} of {steps.length} done</h2>
         <button onClick={onDismiss} className="text-xs text-slate2 hover:text-ink">Dismiss</button>
@@ -601,7 +601,7 @@ function OnboardingChecklist({ accounts, income, bills, onDismiss }: { accounts:
       <ol className="grid gap-3 sm:grid-cols-3">
         {steps.map((s) => (
           <li key={s.to}>
-            <Link to={s.to} className={`block rounded-lg border p-3 transition-colors ${s.done ? 'border-moss/30 bg-moss/5' : 'border-line hover:border-moss/40'}`}>
+            <Link to={s.to} className={`block rounded-lg border p-3 transition-colors ${s.done ? 'border-accent/30 bg-accent-soft/40' : 'border-line hover:border-accent/40'}`}>
               <p className="flex items-center gap-2 text-sm font-medium text-ink">
                 <span aria-hidden className={s.done ? 'text-mossdeep' : 'text-slate2'}>{s.done ? '✓' : '○'}</span>
                 {s.label}

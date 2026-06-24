@@ -146,7 +146,7 @@ export default function Spending() {
                         {x.receipt_url && (
                           <>
                             {' · '}
-                            <button onClick={() => viewReceipt(x.receipt_url!)} className="font-medium text-mossdeep hover:underline">Receipt</button>
+                            <button onClick={() => viewReceipt(x.receipt_url!)} className="font-medium text-accent hover:underline">Receipt</button>
                           </>
                         )}
                       </p>
