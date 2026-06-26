@@ -34,6 +34,7 @@ export default function Settings() {
   const [importIncome, setImportIncome] = useState(true)
   const [importing, setImporting] = useState(false)
   const [exporting, setExporting] = useState<string | null>(null)
+  const [prefs, setPrefs] = useState({ notif: true, roundups: false, biometric: true })
 
   const updateProfile = async (values: Partial<Profile>, reload = false) => {
     const { error } = await supabase.from('profiles').update(values).eq('id', user!.id)
@@ -114,14 +115,30 @@ export default function Settings() {
               {HORIZONS.map((h) => <option key={h} value={h}>{h} days</option>)}
             </Select>
           </Field>
-          <Field label="Theme">
-            <Select value={theme} onChange={(e) => setTheme(e.target.value as 'cosmic' | 'midnight')}>
-              <option value="cosmic">Cosmic — warm light</option>
-              <option value="midnight">Midnight — blue dark</option>
-            </Select>
-          </Field>
+          <div>
+            <span className="mb-1.5 block text-sm font-medium text-ink">Appearance</span>
+            <div className="grid grid-cols-2 gap-3">
+              {([['midnight', 'linear-gradient(135deg,#5b8cff,#9d6bff)'], ['daylight', 'linear-gradient(135deg,#3b5bfd,#7c4dff)']] as const).map(([t, swatch]) => (
+                <button
+                  key={t}
+                  onClick={() => setTheme(t)}
+                  className={`rounded-[14px] border-2 p-3 text-left transition ${theme === t ? 'border-accent' : 'border-line hover:border-border2'}`}
+                >
+                  <span className="block h-10 w-full rounded-[10px]" style={{ background: swatch }} />
+                  <span className="mt-2 block text-sm font-medium capitalize text-ink">{t}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-3 border-t border-line pt-4">
+            <Toggle checked={prefs.notif} onChange={(v) => setPrefs({ ...prefs, notif: v })} label="Push notifications" />
+            <Toggle checked={prefs.roundups} onChange={(v) => setPrefs({ ...prefs, roundups: v })} label="Round-up savings" />
+            <Toggle checked={prefs.biometric} onChange={(v) => setPrefs({ ...prefs, biometric: v })} label="Face ID lock" />
+          </div>
           <div className="border-t border-line pt-4">
-            <Button variant="ghost" onClick={signOut}>Sign out</Button>
+            <button onClick={signOut} className="flex w-full items-center justify-between text-sm font-medium text-neg">
+              Sign out <span aria-hidden>›</span>
+            </button>
           </div>
         </Card>
 

@@ -7,6 +7,8 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
 import { Pencil } from 'lucide-react'
+import { useCountUp, useMounted } from '../lib/anim'
+import { aggregateByCategory } from '../lib/categories'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
@@ -100,6 +102,16 @@ export default function Dashboard() {
   const monthlyIncome = income.rows.filter((i) => i.is_active).reduce((s, i) => s + perMonth(Number(i.amount), i.frequency), 0)
   const monthlyBills = bills.rows.filter((b) => b.is_active).reduce((s, b) => s + perMonth(Number(b.amount), b.frequency), 0)
   const pctUsed = card && Number(card.credit_limit) > 0 ? (Number(card.balance) / Number(card.credit_limit)) * 100 : 0
+
+  const heroValue = card ? forecast.startAvailable : cashPosition(accounts.rows)
+  const availAnim = useCountUp(heroValue)
+  const netAnim = useCountUp(nw.net)
+  const spendAnim = useCountUp(monthTotal)
+  const mounted = useMounted()
+  const spendingByCat = useMemo(
+    () => aggregateByCategory(monthSpend, (e) => e.category, (e) => Number(e.amount)).slice(0, 4),
+    [monthSpend],
+  )
 
   const openEditBalance = () => {
     if (!card) return
@@ -210,55 +222,54 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Hero: credit card */}
-      <Card className="mb-6 p-6">
-        {card ? (
-          <div className="flex flex-wrap items-start justify-between gap-6">
-            <div className="min-w-[260px]">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate2">Credit card balance · {card.name}</p>
-              <p className="mt-1 font-num text-5xl font-semibold tracking-tight text-ink">
-                {money(Number(card.balance))} <span className="align-middle text-base font-normal text-slate2">owed</span>
-                <button
-                  onClick={openEditBalance}
-                  aria-label="Edit card balance"
-                  title="Edit balance"
-                  className="ml-2 align-middle text-slate2 transition-colors hover:text-ink"
-                >
-                  <Pencil size={18} aria-hidden className="inline" />
-                </button>
-              </p>
-              <p className="mt-3 text-sm text-slate2">
-                <span className="font-num font-semibold text-mossdeep">{money(forecast.startAvailable)}</span> available of {money(forecast.limit)} limit
-              </p>
-              <div className="mt-2 h-2 w-full max-w-xs overflow-hidden rounded-full bg-mist">
-                <div className={`h-full rounded-full transition-all duration-500 ${pctUsed > 90 ? 'bg-claret' : pctUsed > 75 ? 'bg-amber2' : 'bg-moss'}`} style={{ width: `${Math.min(pctUsed, 100)}%` }} />
-              </div>
-              <p className="mt-1 text-xs text-slate2">{Math.round(pctUsed)}% used</p>
-            </div>
-            <div className="flex flex-wrap gap-x-8 gap-y-4 text-sm">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate2">Monthly income</p>
-                <p className="mt-1 font-num text-xl font-semibold text-mossdeep">{money(monthlyIncome)}</p>
-              </div>
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate2">Monthly bills</p>
-                <p className="mt-1 font-num text-xl font-semibold text-ink">{money(monthlyBills)}</p>
-              </div>
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate2">{activeHorizon}d low point</p>
-                <p className={`mt-1 font-num text-xl font-semibold ${lowTone}`}>{money(low.available)}</p>
-                <p className="text-xs text-slate2">{format(parseISO(low.date), 'd MMM')}{low.available < 0 ? ' · over limit' : ' available'}</p>
-              </div>
-            </div>
+      {/* Gradient hero */}
+      <div className="grad-accent relative mb-[18px] overflow-hidden rounded-[26px] p-6 text-white shadow-card sm:p-7">
+        <div aria-hidden className="blob1 pointer-events-none absolute -left-12 -top-20 h-72 w-72 rounded-full" style={{ background: 'radial-gradient(circle, rgba(255,255,255,.28), transparent 60%)' }} />
+        <div aria-hidden className="blob2 pointer-events-none absolute -bottom-24 right-2 h-80 w-80 rounded-full" style={{ background: 'radial-gradient(circle, rgba(157,107,255,.5), transparent 60%)' }} />
+        <div aria-hidden className="pointer-events-none absolute right-0 top-0 h-44 w-44" style={{ background: 'radial-gradient(circle at top right, rgba(255,255,255,.22), transparent 60%)' }} />
+
+        <div className="relative flex flex-col gap-7 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-[260px]">
+            {card ? (
+              <>
+                <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-white/80">
+                  <span className="h-1.5 w-1.5 rounded-full bg-white" /> Available credit · {card.name}
+                </p>
+                <p className="mt-2 font-num text-[clamp(40px,8vw,54px)] font-semibold leading-none tracking-tight">{money(availAnim)}</p>
+                <p className="mt-2 text-sm text-white/85">
+                  of {money(forecast.limit)} limit · {money(Number(card.balance))} owed
+                  <button onClick={openEditBalance} aria-label="Edit card balance" title="Edit balance" className="ml-1.5 align-middle text-white/70 hover:text-white">
+                    <Pencil size={14} aria-hidden className="inline" />
+                  </button>
+                </p>
+                <div className="mt-4 h-2.5 w-full max-w-sm overflow-hidden rounded-full bg-white/25">
+                  <div className="h-full rounded-full bg-white transition-[width] duration-1000 ease-out" style={{ width: mounted ? `${Math.min(pctUsed, 100)}%` : '0%' }} />
+                </div>
+                <p className="mt-1.5 text-xs text-white/80">{Math.round(pctUsed)}% of your limit used</p>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <button onClick={openSettle} disabled={settledToday} className="rounded-[12px] bg-white/15 px-3.5 py-2 text-sm font-medium backdrop-blur-md transition hover:bg-white/25 disabled:opacity-60">
+                    {settledToday ? 'Settled today ✓' : 'Settle the day'}
+                  </button>
+                  <Link to="/accounts" className="rounded-[12px] bg-white/15 px-3.5 py-2 text-sm font-medium backdrop-blur-md transition hover:bg-white/25">Move money</Link>
+                  <button onClick={() => setScenarioOpen(true)} className="rounded-[12px] bg-white/15 px-3.5 py-2 text-sm font-medium backdrop-blur-md transition hover:bg-white/25">Test scenario</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-xs font-medium uppercase tracking-wide text-white/80">Cash position</p>
+                <p className="mt-2 font-num text-[clamp(40px,8vw,54px)] font-semibold leading-none">{money(availAnim)}</p>
+                <p className="mt-2 max-w-sm text-sm text-white/85">Add a credit card on the <Link to="/accounts" className="font-semibold underline">Accounts page</Link> to track it as your hub.</p>
+              </>
+            )}
           </div>
-        ) : (
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-slate2">Cash position</p>
-            <p className="mt-1 font-num text-5xl font-semibold tracking-tight text-ink">{money(cashPosition(accounts.rows))}</p>
-            <p className="mt-2 text-sm text-slate2">Add a credit card on the <Link to="/accounts" className="font-medium text-accent hover:underline">Accounts page</Link> to track it as your hub.</p>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:w-[340px] lg:grid-cols-1">
+            <GlassTile label="Monthly income" value={`+${money(monthlyIncome)}`} />
+            <GlassTile label="Monthly bills" value={money(monthlyBills)} />
+            <GlassTile label={`${activeHorizon}-day low point`} value={money(low.available)} sub={`${format(parseISO(low.date), 'd MMM')}${low.available < 0 ? ' · over limit' : ''}`} />
           </div>
-        )}
-      </Card>
+        </div>
+      </div>
 
       {/* Forecast */}
       <Card className="mb-6 p-5">
@@ -337,83 +348,56 @@ export default function Dashboard() {
         )}
       </Card>
 
-      {/* Net worth */}
-      <Card className="mb-6 p-5">
-        <div className="flex flex-wrap items-start justify-between gap-6">
-          <div className="min-w-[220px]">
-            <h2 className="font-display text-lg font-semibold text-ink">Net worth</h2>
-            <p className={`mt-1 font-num text-4xl font-semibold tracking-tight ${nw.net < 0 ? 'text-claret' : 'text-ink'}`}>{money(nw.net)}</p>
-            <p className="mt-1 text-xs text-slate2">Everything you own minus everything you owe</p>
-          </div>
-          <div className="flex flex-wrap gap-x-8 gap-y-3 text-sm">
+      {/* Net worth + Spending this month */}
+      <div className="grid gap-[18px] lg:grid-cols-[1.25fr_1fr]">
+        <Card className="lift p-6">
+          <h2 className="font-display text-lg font-semibold text-ink">Net worth</h2>
+          <p className={`mt-1 font-num text-4xl font-semibold tracking-tight ${nw.net < 0 ? 'text-neg' : 'text-ink'}`}>{money(netAnim)}</p>
+          <p className="mt-1 text-xs text-slate2">Everything you own minus everything you owe</p>
+          <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-mossdeep">Assets {money(nw.assets)}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-pos">Assets {money(nw.assets)}</p>
               <p className="mt-1 text-slate2">Cash <span className="font-num text-ink">{money(nw.cashAssets)}</span></p>
               <p className="text-slate2">Savings <span className="font-num text-ink">{money(nw.savingsAssets)}</span></p>
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-claret">Debts {money(nw.debts)}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-neg">Debts {money(nw.debts)}</p>
               <p className="mt-1 text-slate2">Credit card <span className="font-num text-ink">{money(nw.cardDebt)}</span></p>
               <p className="text-slate2">Loans <span className="font-num text-ink">{money(nw.loanDebt)}</span></p>
             </div>
           </div>
-        </div>
-        <div className="mt-4 flex h-3 overflow-hidden rounded-full bg-mist" title="Assets vs debts">
-          {nw.assets + nw.debts > 0 && (
-            <>
-              <div className="h-full bg-moss" style={{ width: `${(nw.assets / (nw.assets + nw.debts)) * 100}%` }} />
-              <div className="h-full bg-claret" style={{ width: `${(nw.debts / (nw.assets + nw.debts)) * 100}%` }} />
-            </>
-          )}
-        </div>
-      </Card>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="p-5">
-          <h2 className="mb-3 font-display text-lg font-semibold text-ink">Coming up</h2>
-          {forecast.upcoming.length === 0 ? (
-            <p className="text-sm text-slate2">Nothing scheduled in this window yet.</p>
-          ) : (
-            <ul className="divide-y divide-line text-sm">
-              {forecast.upcoming.map((e, i) => (
-                <li key={i} className="flex items-center justify-between gap-3 py-2">
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-ink">{e.label}</p>
-                    <p className="text-xs text-slate2">{format(parseISO(e.date), 'EEE d MMM')} · {titleCase(e.kind)}</p>
-                  </div>
-                  <Money value={e.amount} signed />
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className="mt-4 flex h-3 overflow-hidden rounded-full bg-mist" title="Assets vs debts">
+            {nw.assets + nw.debts > 0 && (
+              <>
+                <div className="h-full bg-pos transition-[width] duration-700" style={{ width: mounted ? `${(nw.assets / (nw.assets + nw.debts)) * 100}%` : '0%' }} />
+                <div className="h-full bg-neg" style={{ width: `${(nw.debts / (nw.assets + nw.debts)) * 100}%` }} />
+              </>
+            )}
+          </div>
+          <p className="mt-2 text-xs text-slate2">Assets cover {nw.debts > 0 ? ((nw.assets / nw.debts) * 100).toFixed(1) : '100'}% of what you owe</p>
         </Card>
 
-        <Card className="p-5">
-          <h2 className="mb-3 font-display text-lg font-semibold text-ink">Budgets this month</h2>
-          {budgets.rows.filter((b) => b.is_active).length === 0 ? (
-            <p className="text-sm text-slate2">
-              No budgets yet — set a safe-to-spend cap on the <Link to="/spending" className="font-medium text-accent hover:underline">Spending page</Link>.
-            </p>
+        <Card className="lift p-6">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-display text-lg font-semibold text-ink">Spending this month</h2>
+            <Link to="/spending" className="text-xs font-medium text-accent-strong hover:underline">View all</Link>
+          </div>
+          <p className="font-num text-3xl font-semibold text-ink">{money(spendAnim)}</p>
+          {spendingByCat.length === 0 ? (
+            <p className="mt-3 text-sm text-slate2">Nothing logged yet this month.</p>
           ) : (
-            <ul className="space-y-4">
-              {budgets.rows.filter((b) => b.is_active).map((b) => {
-                const spent = b.type === 'safe_to_spend' ? monthTotal : monthSpend.filter((e) => e.category === b.category).reduce((s, e) => s + Number(e.amount), 0)
-                const pct = Math.min((spent / Number(b.monthly_limit)) * 100, 100)
-                const over = spent > Number(b.monthly_limit)
-                return (
-                  <li key={b.id}>
-                    <div className="mb-1 flex items-center justify-between text-sm">
-                      <span className="font-medium text-ink">{b.label}</span>
-                      <span className="font-num text-xs text-slate2">
-                        {money(spent)} / {money(Number(b.monthly_limit))} {over ? <Badge tone="bad">Over</Badge> : pct > 80 ? <Badge tone="warn">Close</Badge> : null}
-                      </span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-mist">
-                      <div className={`h-full rounded-full transition-all duration-500 ${over ? 'bg-claret' : pct > 80 ? 'bg-amber2' : 'bg-moss'}`} style={{ width: `${pct}%` }} />
-                    </div>
-                  </li>
-                )
-              })}
+            <ul className="mt-4 space-y-2.5">
+              {spendingByCat.map((c) => (
+                <li key={c.key} className="text-sm">
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-slate2"><span className="h-2.5 w-2.5 rounded-full" style={{ background: c.color }} />{c.label}</span>
+                    <span className="font-num text-ink">{money(c.amount)}</span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-mist">
+                    <div className="h-full rounded-full transition-[width] duration-700" style={{ width: mounted ? `${Math.max((c.amount / (spendingByCat[0]?.amount || 1)) * 100, 6)}%` : '0%', background: c.color }} />
+                  </div>
+                </li>
+              ))}
             </ul>
           )}
         </Card>
@@ -581,6 +565,16 @@ function ForecastTooltip({ active, payload }: {
       ) : (
         <p className="mt-2 border-t border-line pt-2 text-slate2">No money events this day</p>
       )}
+    </div>
+  )
+}
+
+function GlassTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="rounded-[14px] border border-white/15 bg-white/10 px-4 py-3 backdrop-blur-md">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-white/75">{label}</p>
+      <p className="mt-0.5 font-num text-lg font-semibold text-white">{value}</p>
+      {sub && <p className="mt-0.5 text-[11px] text-white/70">{sub}</p>}
     </div>
   )
 }

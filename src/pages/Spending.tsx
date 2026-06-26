@@ -6,6 +6,8 @@ import { receiptUrl, uploadReceipt } from '../lib/receipts'
 import { useTable } from '../lib/useTable'
 import { money, titleCase } from '../lib/format'
 import type { BudgetAlert, BudgetAlertType, Expense, ExpenseCategory } from '../lib/types'
+import { aggregateByCategory } from '../lib/categories'
+import { Donut } from '../components/viz'
 import { Badge, Button, Card, EmptyState, EntityForm, Field, Modal, PageHeader, Select, TextArea, TextInput, Toggle } from '../components/ui'
 
 const CATEGORIES: ExpenseCategory[] = ['food_drink', 'transport', 'shopping', 'entertainment', 'health', 'travel', 'bills', 'subscriptions', 'home', 'other']
@@ -32,12 +34,10 @@ export default function Spending() {
   const monthTotal = monthSpend.reduce((s, e) => s + Number(e.amount), 0)
   const lastMonthTotal = lastMonthSpend.reduce((s, e) => s + Number(e.amount), 0)
 
-  const byCategory = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const e of monthSpend) map.set(e.category, (map.get(e.category) ?? 0) + Number(e.amount))
-    return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
-  }, [monthSpend])
-  const topCategoryTotal = byCategory[0]?.[1] ?? 0
+  const byCategory = useMemo(
+    () => aggregateByCategory(monthSpend, (e) => e.category, (e) => Number(e.amount)),
+    [monthSpend],
+  )
 
   const openExpense = (x: Expense | 'new') => {
     setEditingExpense(x)
@@ -99,15 +99,14 @@ export default function Spending() {
       />
 
       {(monthSpend.length > 0 || lastMonthTotal > 0) && (
-        <Card className="mb-6 p-5">
+        <Card className="mb-[18px] p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-display text-lg font-semibold text-ink">This month at a glance</h2>
             {lastMonthTotal > 0 && (
               <p className="text-sm text-slate2">
-                Last month: <span className="font-num">{money(lastMonthTotal)}</span>
-                {' · '}
-                <span className={monthTotal > lastMonthTotal ? 'text-amber2' : 'text-mossdeep'}>
-                  {monthTotal > lastMonthTotal ? '▲' : '▼'} {money(Math.abs(monthTotal - lastMonthTotal))} vs last month so far
+                Last month <span className="font-num">{money(lastMonthTotal)}</span>{' · '}
+                <span className={monthTotal > lastMonthTotal ? 'text-warn' : 'text-pos'}>
+                  {monthTotal > lastMonthTotal ? '▲' : '▼'} {money(Math.abs(monthTotal - lastMonthTotal))} vs last month
                 </span>
               </p>
             )}
@@ -115,15 +114,29 @@ export default function Spending() {
           {byCategory.length === 0 ? (
             <p className="text-sm text-slate2">Nothing logged yet this month.</p>
           ) : (
-            <ul className="space-y-2">
-              {byCategory.map(([cat, total]) => (
-                <li key={cat} className="flex items-center gap-3 text-sm">
-                  <span className="w-28 shrink-0 truncate text-slate2">{titleCase(cat)}</span>
-                  <span className="h-3 rounded-full bg-moss/70 transition-all duration-500" style={{ width: `${Math.max((total / topCategoryTotal) * 100, 4)}%` }} />
-                  <span className="font-num text-xs text-ink">{money(total)}</span>
-                </li>
-              ))}
-            </ul>
+            <div className="flex flex-col items-center gap-8 sm:flex-row">
+              <Donut slices={byCategory} size={220} thickness={26}>
+                <p className="text-[11px] uppercase tracking-wide text-slate2">Per month</p>
+                <p className="font-num text-2xl font-semibold text-ink">{money(monthTotal)}</p>
+              </Donut>
+              <ul className="w-full flex-1 space-y-3">
+                {byCategory.map((c) => (
+                  <li key={c.key} className="text-sm">
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ background: c.color }} />
+                        <span className="font-medium text-ink">{c.label}</span>
+                        <span className="text-slate2">{Math.round(c.pct)}%</span>
+                      </span>
+                      <span className="font-num text-ink">{money(c.amount)}</span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-mist">
+                      <div className="h-full rounded-full" style={{ width: `${Math.max((c.amount / (byCategory[0]?.amount || 1)) * 100, 4)}%`, background: c.color }} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </Card>
       )}

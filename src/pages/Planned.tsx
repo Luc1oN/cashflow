@@ -3,6 +3,8 @@ import { format, parseISO } from 'date-fns'
 import { useTable } from '../lib/useTable'
 import { money, titleCase } from '../lib/format'
 import type { PlannedExpense, PlannedExpenseCategory } from '../lib/types'
+import { aggregateByCategory } from '../lib/categories'
+import { CategorySummary } from '../components/viz'
 import { Badge, Button, Card, EmptyState, EntityForm, Field, Modal, PageHeader, Select, TextArea, TextInput } from '../components/ui'
 
 const CATEGORIES: PlannedExpenseCategory[] = ['holiday', 'shopping', 'gift', 'car', 'home', 'event', 'other']
@@ -16,6 +18,8 @@ export default function Planned() {
 
   const upcoming = rows.filter((p) => !p.is_completed)
   const done = rows.filter((p) => p.is_completed)
+  const plannedByCat = aggregateByCategory(upcoming, (p) => p.category, (p) => Number(p.amount))
+  const plannedTotal = upcoming.reduce((s, p) => s + Number(p.amount), 0)
 
   const open = (p: PlannedExpense | 'new') => {
     setEditing(p)
@@ -30,14 +34,14 @@ export default function Planned() {
   }
 
   const Row = ({ p }: { p: PlannedExpense }) => (
-    <li className="flex items-center justify-between gap-3 px-5 py-3">
+    <li className={`flex items-center justify-between gap-3 px-5 py-3 transition-opacity ${p.is_completed ? 'opacity-50' : ''}`}>
       <div className="flex min-w-0 items-center gap-3">
         <input
           type="checkbox"
           checked={p.is_completed}
           onChange={() => update(p.id, { is_completed: !p.is_completed })}
           aria-label={p.is_completed ? `Mark ${p.name} as not paid` : `Mark ${p.name} as paid`}
-          className="h-4 w-4 accent-moss"
+          className="h-4 w-4 accent-accent"
         />
         <div className="min-w-0">
           <p className={`truncate font-medium ${p.is_completed ? 'text-slate2 line-through' : 'text-ink'}`}>
@@ -59,7 +63,16 @@ export default function Planned() {
       {loading ? <p className="text-slate2">Loading…</p> : rows.length === 0 ? (
         <EmptyState message="Nothing planned. Add upcoming one-offs — a holiday, a gift, car service — so they show in the forecast." />
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-[18px]">
+          {plannedByCat.length > 0 && (
+            <Card className="p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="font-display text-lg font-semibold text-ink">By category</h2>
+                <span className="font-num text-sm text-slate2">{money(plannedTotal)} planned</span>
+              </div>
+              <CategorySummary slices={plannedByCat} />
+            </Card>
+          )}
           <Card><ul className="divide-y divide-line">{upcoming.map((p) => <Row key={p.id} p={p} />)}</ul>
             {upcoming.length === 0 && <p className="px-5 py-4 text-sm text-slate2">All planned expenses are paid.</p>}
           </Card>

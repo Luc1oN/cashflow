@@ -2,50 +2,120 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Cosmic Orange — default theme (warm, iPhone-17-Pro inspired).
-   Accent (orange) is distinct from positive/income (green = moss). */
-:root {
-  --paper: 243 236 228;     /* bg  #f3ece4 */
-  --surface: 255 253 249;   /* surface #fffdf9 */
-  --ink: 42 26 16;          /* text #2a1a10 */
-  --slate2: 125 106 89;     /* muted #7d6a59 */
-  --line: 232 220 203;      /* border #e8dccb */
-  --mist: 241 231 218;      /* chip/subtle #f1e7da */
-  --moss: 31 138 91;        /* positive #1f8a5b */
-  --mossdeep: 23 110 73;    /* positive-strong */
-  --amber2: 189 122 28;     /* warn #bd7a1c */
-  --claret: 192 54 44;      /* negative #c0362c */
-  --violet: 124 92 200;     /* vault */
-  --accent: 224 99 58;      /* accent #e0633a */
-  --accent-strong: 194 76 34; /* #c24c22 */
-  --accent-soft: 251 227 214; /* #fbe3d6 */
+/* ── Themes ───────────────────────────────────────────────────────────────
+   Midnight (electric-blue) is the default — applied on :root and when
+   data-theme="midnight". Daylight is the light option. Values are space-RGB
+   triplets so Tailwind's `rgb(var(--x) / <alpha>)` colors work. Existing names
+   (paper/ink/line/mist/moss/claret/amber2/violet) are mapped onto the new
+   token meanings so current classes keep working; income/positive stays green
+   via moss←pos. */
+:root,
+[data-theme='midnight'] {
+  --bg: 7 10 18;            /* #070a12 */
+  --bg2: 10 14 26;          /* #0a0e1a */
+  --surface: 16 23 40;      /* #101728 */
+  --surface2: 24 33 58;     /* #18213a */
+  --border: 34 46 77;       /* #222e4d */
+  --border2: 43 58 96;      /* #2b3a60 */
+  --grid: 26 36 64;         /* #1a2440 */
+  --text: 238 242 252;      /* #eef2fc */
+  --text2: 194 204 228;     /* #c2cce4 */
+  --muted: 133 147 180;     /* #8593b4 */
+  --accent: 91 140 255;     /* #5b8cff */
+  --accent-strong: 130 168 255; /* #82a8ff */
+  --accent2: 157 107 255;   /* #9d6bff (violet) */
+  --accent-soft: 28 40 74;  /* ≈ accent @15% on bg */
   --on-accent: 255 255 255;
-  --shadow: 90 45 15;
+  --pos: 61 220 151;        /* #3ddc97 */
+  --neg: 255 107 129;       /* #ff6b81 */
+  --warn: 255 180 84;       /* #ffb454 */
+  --chip: 24 33 58;         /* #18213a */
+  --chip-text: 154 166 196; /* #9aa6c4 */
+  --card-shadow: 0 1px 0 rgba(255, 255, 255, .04), 0 20px 50px -20px rgba(0, 0, 0, .7);
+
+  /* Aliases onto the names existing components already use */
+  --paper: var(--bg);
+  --ink: var(--text);
+  --slate2: var(--muted);
+  --line: var(--border);
+  --mist: var(--surface2);
+  --moss: var(--pos);
+  --mossdeep: var(--pos);
+  --amber2: var(--warn);
+  --claret: var(--neg);
+  --violet: var(--accent2);
+  --radius: 22px;
 }
 
-/* Midnight — professional midnight-blue dark theme. */
-.midnight {
-  --paper: 7 11 20;         /* bg #070b14 */
-  --surface: 15 23 42;      /* surface #0f172a */
-  --ink: 230 236 247;       /* text #e6ecf7 */
-  --slate2: 132 146 173;    /* muted #8492ad */
-  --line: 35 48 77;         /* border #23304d */
-  --mist: 22 32 58;         /* chip/surface2 #16203a */
-  --moss: 52 211 153;       /* positive #34d399 */
-  --mossdeep: 110 231 183;
-  --amber2: 251 191 36;     /* warn #fbbf24 */
-  --claret: 251 113 133;    /* negative #fb7185 */
-  --violet: 167 139 250;
-  --accent: 59 130 246;     /* accent #3b82f6 */
-  --accent-strong: 96 165 250; /* #60a5fa */
-  --accent-soft: 22 40 75;  /* blue tint ≈ accent @16% on surface */
+[data-theme='daylight'] {
+  --bg: 238 241 247;        /* #eef1f7 */
+  --bg2: 246 248 252;       /* #f6f8fc */
+  --surface: 255 255 255;   /* #ffffff */
+  --surface2: 243 246 252;  /* #f3f6fc */
+  --border: 228 233 242;    /* #e4e9f2 */
+  --border2: 214 222 235;   /* #d6deeb */
+  --grid: 238 242 248;      /* #eef2f8 */
+  --text: 15 23 41;         /* #0f1729 */
+  --text2: 54 65 92;        /* #36415c */
+  --muted: 103 115 142;     /* #67738e */
+  --accent: 59 91 253;      /* #3b5bfd */
+  --accent-strong: 37 64 224; /* #2540e0 */
+  --accent2: 124 77 255;    /* #7c4dff */
+  --accent-soft: 231 236 255; /* ≈ accent @10% on white */
   --on-accent: 255 255 255;
-  --shadow: 0 0 0;
+  --pos: 16 163 107;        /* #10a36b */
+  --neg: 224 64 92;         /* #e0405c */
+  --warn: 201 133 27;       /* #c9851b */
+  --chip: 243 246 252;
+  --chip-text: 103 115 142;
+  --card-shadow: 0 1px 2px rgba(20, 30, 60, .04), 0 18px 40px -22px rgba(20, 30, 60, .28);
 }
 
 body {
   @apply bg-paper font-body text-ink antialiased;
 }
+
+/* Signature gradient — hero, primary button, brand mark, active fills, card visual ONLY. */
+.grad-accent {
+  background-image: linear-gradient(135deg, rgb(var(--accent)), rgb(var(--accent2)));
+}
+.grad-accent-text {
+  background-image: linear-gradient(135deg, rgb(var(--accent)), rgb(var(--accent2)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Hide scrollbar (mobile bottom-bar scroll row) */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* ── Animations ──────────────────────────────────────────────────────────
+   Entrance defaults to a VISIBLE resting state: keyframe ends at opacity 1
+   with fill-mode both, and reduced-motion collapses duration so content is
+   never trapped invisible. */
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.rise { animation: riseIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+@keyframes meshFloat {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(8%, 6%) scale(1.12); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes meshFloat2 {
+  0% { transform: translate(0, 0) scale(1.05); }
+  50% { transform: translate(-7%, -5%) scale(0.95); }
+  100% { transform: translate(0, 0) scale(1.05); }
+}
+.blob1 { animation: meshFloat 15s ease-in-out infinite; }
+.blob2 { animation: meshFloat2 17s ease-in-out infinite; }
+
+/* Card hover lift */
+.lift { transition: transform 0.2s ease, border-color 0.2s ease; }
+.lift:hover { transform: translateY(-3px); }
 
 /* Markdown rendering for AI advisor replies */
 .prose-cf { @apply text-sm leading-relaxed text-ink; }
@@ -60,8 +130,8 @@ body {
 .prose-cf ol { @apply my-2 list-decimal space-y-1 pl-5; }
 .prose-cf li { @apply pl-0.5; }
 .prose-cf strong { @apply font-semibold text-ink; }
-.prose-cf a { @apply text-mossdeep underline; }
-.prose-cf code { @apply rounded bg-surface px-1 py-0.5 font-num text-[0.85em]; }
+.prose-cf a { @apply text-accent-strong underline; }
+.prose-cf code { @apply rounded bg-surface2 px-1 py-0.5 font-num text-[0.85em]; }
 .prose-cf hr { @apply my-3 border-line; }
 .prose-cf blockquote { @apply border-l-2 border-line pl-3 text-slate2; }
 .prose-cf table { @apply my-2 w-full border-collapse text-xs; }
@@ -71,6 +141,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }

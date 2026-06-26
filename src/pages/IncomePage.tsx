@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { format, parseISO } from 'date-fns'
+import { ArrowUpRight } from 'lucide-react'
 import { useTable } from '../lib/useTable'
 import { money, titleCase } from '../lib/format'
 import type { Income, IncomeFrequency, IncomeType } from '../lib/types'
@@ -46,17 +47,22 @@ export default function IncomePage() {
         <Card>
           <ul className="divide-y divide-line">
             {rows.map((i) => (
-              <li key={i.id} className="flex items-center justify-between gap-3 px-5 py-3">
-                <div className="min-w-0">
-                  <p className="truncate font-medium text-ink">
-                    {i.name}{' '}
-                    {i.income_type === 'salary' && <Badge tone="good">Salary</Badge>}{' '}
-                    {!i.is_active && <Badge>Paused</Badge>}
-                  </p>
-                  <p className="text-xs text-slate2">{titleCase(i.frequency)} · next {format(parseISO(i.next_date), 'd MMM yyyy')}</p>
+              <li key={i.id} className="flex items-center justify-between gap-3 px-5 py-3.5">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] bg-pos/15 text-pos">
+                    <ArrowUpRight size={18} aria-hidden />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-ink">
+                      {i.name}{' '}
+                      {i.income_type === 'salary' && <Badge tone="good">Salary</Badge>}{' '}
+                      {!i.is_active && <Badge tone="warn">Paused</Badge>}
+                    </p>
+                    <p className="text-xs text-slate2">{titleCase(i.frequency)} · next {format(parseISO(i.next_date), 'd MMM yyyy')}</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className="font-num font-semibold text-mossdeep">+{money(Number(i.amount))}</span>
+                  <span className="font-num font-semibold text-pos">+{money(Number(i.amount))}</span>
                   <button onClick={() => open(i)} className="text-sm text-slate2 hover:text-ink">Edit</button>
                 </div>
               </li>

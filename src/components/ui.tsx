@@ -2,7 +2,7 @@ import { type ReactNode, type FormEvent, useEffect, useRef, useState } from 'rea
 import { money } from '../lib/format'
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-[18px] border border-line bg-surface shadow-card ${className}`}>{children}</div>
+  return <div className={`rounded-[22px] border border-line bg-surface shadow-card ${className}`}>{children}</div>
 }
 
 export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: ReactNode }) {
@@ -26,16 +26,16 @@ export function Button({ children, onClick, type = 'button', variant = 'primary'
   className?: string
 }) {
   const styles = {
-    primary: 'bg-accent text-on-accent hover:bg-accent-strong',
-    ghost: 'border border-line bg-surface text-ink hover:bg-mist',
-    danger: 'bg-surface border border-line text-claret hover:border-claret/40',
+    primary: 'grad-accent text-white shadow-[0_6px_18px_-6px_rgb(var(--accent)/0.55)] hover:brightness-110 active:translate-y-px',
+    ghost: 'border border-line bg-surface text-ink hover:bg-surface2',
+    danger: 'bg-surface border border-line text-neg hover:border-neg/40',
   }[variant]
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${styles} ${className}`}
+      className={`rounded-[12px] px-4 py-2 text-sm font-medium transition-all disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${styles} ${className}`}
     >
       {children}
     </button>
