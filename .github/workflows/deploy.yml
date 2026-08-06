@@ -44,3 +44,8 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          # Pages' queue can be slow to pick a deployment up; the 10-minute
+          # default aborts and marks an otherwise-good build as failed.
+          timeout: 1200000
+          error_count: 20
