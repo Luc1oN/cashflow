@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 
 export type Theme = 'midnight' | 'daylight'
 const THEMES: Theme[] = ['midnight', 'daylight']
@@ -37,20 +37,23 @@ export const THEME_OPTIONS = THEMES
 /** Resolved chart colors that follow the active theme (Recharts needs concrete values). */
 export function useChartColors() {
   const { theme } = useTheme()
-  const get = (name: string) => `rgb(${getComputedStyle(document.documentElement).getPropertyValue(name).trim().split(' ').join(',')})`
-  // theme in deps so charts re-read on switch
-  void theme
-  return {
-    moss: get('--pos'),
-    mossdeep: get('--pos'),
-    pos: get('--pos'),
-    accent: get('--accent'),
-    accent2: get('--accent2'),
-    amber: get('--warn'),
-    claret: get('--neg'),
-    violet: get('--accent2'),
-    grid: get('--grid'),
-    line: get('--border'),
-    slate: get('--muted'),
-  }
+  // Memoised on theme: each read forces a style recalc, so doing this on every
+  // render (11 reads) is a real source of jank on chart-heavy screens.
+  return useMemo(() => {
+    const styles = getComputedStyle(document.documentElement)
+    const get = (name: string) => `rgb(${styles.getPropertyValue(name).trim().split(' ').join(',')})`
+    return {
+      moss: get('--pos'),
+      mossdeep: get('--pos'),
+      pos: get('--pos'),
+      accent: get('--accent'),
+      accent2: get('--accent2'),
+      amber: get('--warn'),
+      claret: get('--neg'),
+      violet: get('--accent2'),
+      grid: get('--grid'),
+      line: get('--border'),
+      slate: get('--muted'),
+    }
+  }, [theme])
 }

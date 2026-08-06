@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import { money } from '../lib/format'
 import type { CategorySlice } from '../lib/categories'
 
@@ -75,16 +75,24 @@ export function Sparkline({ values, target, color = 'rgb(var(--accent))', height
   color?: string
   height?: number
 }) {
+  // useId so two pots with the same starting balance can't share a gradient id
+  // (duplicate ids make one card's fill disappear).
+  const id = useId().replace(/:/g, '')
   if (values.length < 2) return <div style={{ height }} />
-  const max = Math.max(...values, target ?? -Infinity)
-  const min = Math.min(...values, 0)
+  // A pot can project out 500+ fortnights; ~80 points is plenty for a sparkline.
+  const MAX_PTS = 80
+  const step = Math.ceil(values.length / MAX_PTS)
+  const pointsIn = step > 1
+    ? values.filter((_, i) => i % step === 0 || i === values.length - 1)
+    : values
+  const max = Math.max(...pointsIn, target ?? -Infinity)
+  const min = Math.min(...pointsIn, 0)
   const range = max - min || 1
   const W = 100, H = 100
-  const pts = values.map((v, i) => [(i / (values.length - 1)) * W, H - ((v - min) / range) * H] as const)
+  const pts = pointsIn.map((v, i) => [(i / (pointsIn.length - 1)) * W, H - ((v - min) / range) * H] as const)
   const line = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(2)} ${y.toFixed(2)}`).join(' ')
   const area = `${line} L${W} ${H} L0 ${H} Z`
   const ty = target != null ? H - ((target - min) / range) * H : null
-  const id = 'sp' + Math.round((values[0] + values.length) * 97).toString(36)
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={height} preserveAspectRatio="none" aria-hidden>
       <defs>

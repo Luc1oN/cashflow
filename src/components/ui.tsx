@@ -133,13 +133,23 @@ export function Modal({ title, open, onClose, children }: { title: string; open:
 
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 backdrop-blur-[2px] sm:items-start sm:overflow-y-auto sm:p-4 sm:pt-[8vh]" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/60 p-4 backdrop-blur-[2px]"
+      style={{
+        paddingTop: 'max(1rem, env(safe-area-inset-top))',
+        paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+      }}
+      onClick={onClose}
+    >
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-surface p-6 shadow-card animate-rise sm:max-w-lg sm:rounded-xl"
+        // dvh (not vh) so mobile browser chrome / the on-screen keyboard can't
+        // push the actions off-screen; my-auto keeps it centred but lets a tall
+        // form scroll inside the overlay.
+        className="my-auto max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-2xl bg-surface p-6 shadow-card animate-rise"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">

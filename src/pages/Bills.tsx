@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { useTable } from '../lib/useTable'
 import { money, titleCase } from '../lib/format'
@@ -28,10 +28,13 @@ export default function Bills() {
     .filter((b) => b.is_active)
     .reduce((s, b) => s + Number(b.amount) * MONTHLY_FACTOR[b.frequency], 0)
 
-  const byCategory = aggregateByCategory(
-    rows.filter((b) => b.is_active),
-    (b) => b.category,
-    (b) => Number(b.amount) * MONTHLY_FACTOR[b.frequency],
+  const byCategory = useMemo(
+    () => aggregateByCategory(
+      rows.filter((b) => b.is_active),
+      (b) => b.category,
+      (b) => Number(b.amount) * MONTHLY_FACTOR[b.frequency],
+    ),
+    [rows],
   )
 
   const open = (b: Bill | 'new') => {

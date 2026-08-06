@@ -49,8 +49,13 @@ export default {
         toastIn: { from: { opacity: '0', transform: 'translateY(8px) scale(0.98)' }, to: { opacity: '1', transform: 'translateY(0) scale(1)' } },
       },
       animation: {
-        rise: 'rise 0.35s ease-out both',
-        toastIn: 'toastIn 0.2s ease-out both',
+        // `forwards`, never `both`: with `both` the element adopts the keyframe's
+        // opacity:0 start state before the animation runs, so an animation that
+        // never progresses (backgrounded tab, bfcache restore, low-power mode)
+        // leaves content invisible but still interactive. `forwards` keeps the
+        // natural, visible state as the resting state.
+        rise: 'rise 0.35s ease-out forwards',
+        toastIn: 'toastIn 0.2s ease-out forwards',
       },
     },
   },

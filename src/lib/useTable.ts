@@ -20,7 +20,10 @@ export function useTable<T extends { id: string }>(table: string, orderBy = 'cre
       if (error) throw new Error(error.message)
       return (data ?? []) as T[]
     },
-    staleTime: 30_000,
+    // Single-user data that only changes via this app's own mutations (which
+    // invalidate immediately), so a wide stale window is safe — and it stops
+    // every return-to-app on mobile refiring a query per table.
+    staleTime: 120_000,
   })
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: [table] })

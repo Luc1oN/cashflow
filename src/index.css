@@ -98,7 +98,10 @@ body {
   from { opacity: 0; transform: translateY(18px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.rise { animation: riseIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both; }
+/* `forwards`, not `both` — see tailwind.config.js: `both` would apply the
+   opacity:0 start frame before the animation runs, trapping content invisible
+   if it never progresses. */
+.rise { animation: riseIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
 @keyframes meshFloat {
   0% { transform: translate(0, 0) scale(1); }

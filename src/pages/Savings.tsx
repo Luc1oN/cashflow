@@ -3,6 +3,7 @@ import { addDays, format, parseISO, startOfDay } from 'date-fns'
 import { ArrowLeft } from 'lucide-react'
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useTable } from '../lib/useTable'
+import { isCoarsePointer } from '../lib/anim'
 import { useChartColors } from '../contexts/ThemeContext'
 import { money, moneyShort } from '../lib/format'
 import { Sparkline } from '../components/viz'
@@ -59,12 +60,20 @@ export default function Savings() {
 
   const active = rows.filter((g) => g.is_active)
   const selected = rows.find((g) => g.id === selectedId) ?? active[0] ?? rows[0] ?? null
-  const projection = useMemo(() => (selected ? projectPot(selected) : null), [selected])
+
+  // Project every pot once per data change — projectPot walks up to 520
+  // fortnights, so recomputing it per render (twice over) is wasteful.
+  const projections = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof projectPot>>()
+    for (const g of rows) map.set(g.id, projectPot(g))
+    return map
+  }, [rows])
+  const projection = selected ? projections.get(selected.id) ?? null : null
 
   const totalSaved = active.reduce((s, g) => s + Number(g.current_saved), 0)
   const perPayslipTotal = active.reduce((s, g) => s + Number(g.amount_per_payslip), 0)
   const targetPots = active.filter((g) => g.target_amount != null)
-  const onTrack = targetPots.filter((g) => projectPot(g).reachDate).length
+  const onTrack = targetPots.filter((g) => projections.get(g.id)?.reachDate).length
 
   const openDetail = (g: SavingsGoal) => { setSelectedId(g.id); setPotView('detail') }
 
@@ -138,7 +147,7 @@ export default function Savings() {
               {/* Goal grid */}
               <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(300px,1fr))]">
                 {rows.map((g) => {
-                  const pr = projectPot(g)
+                  const pr = projections.get(g.id)!
                   return (
                     <button key={g.id} onClick={() => openDetail(g)} className="lift rounded-[22px] border border-line bg-surface p-5 text-left shadow-card">
                       <div className="flex items-start justify-between gap-2">
@@ -299,7 +308,7 @@ export default function Savings() {
       <Modal title={`Add lump sum — ${lumpFor?.name ?? ''}`} open={lumpFor !== null} onClose={() => setLumpFor(null)}>
         <EntityForm onSubmit={saveLump} submitLabel="Add to balance">
           <p className="text-sm text-slate2">A one-off top-up added straight to this pot's current balance.</p>
-          <Field label="Amount"><TextInput type="number" step="0.01" autoFocus value={lumpAmount} onChange={(e) => setLumpAmount(e.target.value)} required /></Field>
+          <Field label="Amount"><TextInput type="number" step="0.01" inputMode="decimal" autoFocus={!isCoarsePointer()} value={lumpAmount} onChange={(e) => setLumpAmount(e.target.value)} required /></Field>
         </EntityForm>
       </Modal>
     </div>

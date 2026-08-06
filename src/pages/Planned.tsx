@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { useTable } from '../lib/useTable'
 import { money, titleCase } from '../lib/format'
@@ -16,10 +16,15 @@ export default function Planned() {
   const [editing, setEditing] = useState<PlannedExpense | 'new' | null>(null)
   const [form, setForm] = useState(blank)
 
-  const upcoming = rows.filter((p) => !p.is_completed)
-  const done = rows.filter((p) => p.is_completed)
-  const plannedByCat = aggregateByCategory(upcoming, (p) => p.category, (p) => Number(p.amount))
-  const plannedTotal = upcoming.reduce((s, p) => s + Number(p.amount), 0)
+  const { upcoming, done, plannedByCat, plannedTotal } = useMemo(() => {
+    const up = rows.filter((p) => !p.is_completed)
+    return {
+      upcoming: up,
+      done: rows.filter((p) => p.is_completed),
+      plannedByCat: aggregateByCategory(up, (p) => p.category, (p) => Number(p.amount)),
+      plannedTotal: up.reduce((s, p) => s + Number(p.amount), 0),
+    }
+  }, [rows])
 
   const open = (p: PlannedExpense | 'new') => {
     setEditing(p)

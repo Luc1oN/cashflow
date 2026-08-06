@@ -7,7 +7,7 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
 import { Pencil } from 'lucide-react'
-import { useCountUp, useMounted } from '../lib/anim'
+import { isCoarsePointer, useCountUp, useMounted } from '../lib/anim'
 import { aggregateByCategory } from '../lib/categories'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -104,9 +104,9 @@ export default function Dashboard() {
   const pctUsed = card && Number(card.credit_limit) > 0 ? (Number(card.balance) / Number(card.credit_limit)) * 100 : 0
 
   const heroValue = card ? forecast.startAvailable : cashPosition(accounts.rows)
-  const availAnim = useCountUp(heroValue)
-  const netAnim = useCountUp(nw.net)
-  const spendAnim = useCountUp(monthTotal)
+  const availRef = useCountUp<HTMLParagraphElement>(heroValue, money)
+  const netRef = useCountUp<HTMLParagraphElement>(nw.net, money)
+  const spendRef = useCountUp<HTMLParagraphElement>(monthTotal, money)
   const mounted = useMounted()
   const spendingByCat = useMemo(
     () => aggregateByCategory(monthSpend, (e) => e.category, (e) => Number(e.amount)).slice(0, 4),
@@ -235,7 +235,7 @@ export default function Dashboard() {
                 <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-white/80">
                   <span className="h-1.5 w-1.5 rounded-full bg-white" /> Available credit · {card.name}
                 </p>
-                <p className="mt-2 font-num text-[clamp(40px,8vw,54px)] font-semibold leading-none tracking-tight">{money(availAnim)}</p>
+                <p ref={availRef} className="mt-2 font-num text-[clamp(40px,8vw,54px)] font-semibold leading-none tracking-tight">{money(heroValue)}</p>
                 <p className="mt-2 text-sm text-white/85">
                   of {money(forecast.limit)} limit · {money(Number(card.balance))} owed
                   <button onClick={openEditBalance} aria-label="Edit card balance" title="Edit balance" className="ml-1.5 align-middle text-white/70 hover:text-white">
@@ -257,7 +257,7 @@ export default function Dashboard() {
             ) : (
               <>
                 <p className="text-xs font-medium uppercase tracking-wide text-white/80">Cash position</p>
-                <p className="mt-2 font-num text-[clamp(40px,8vw,54px)] font-semibold leading-none">{money(availAnim)}</p>
+                <p ref={availRef} className="mt-2 font-num text-[clamp(40px,8vw,54px)] font-semibold leading-none">{money(heroValue)}</p>
                 <p className="mt-2 max-w-sm text-sm text-white/85">Add a credit card on the <Link to="/accounts" className="font-semibold underline">Accounts page</Link> to track it as your hub.</p>
               </>
             )}
@@ -352,7 +352,7 @@ export default function Dashboard() {
       <div className="grid gap-[18px] lg:grid-cols-[1.25fr_1fr]">
         <Card className="lift p-6">
           <h2 className="font-display text-lg font-semibold text-ink">Net worth</h2>
-          <p className={`mt-1 font-num text-4xl font-semibold tracking-tight ${nw.net < 0 ? 'text-neg' : 'text-ink'}`}>{money(netAnim)}</p>
+          <p ref={netRef} className={`mt-1 font-num text-4xl font-semibold tracking-tight ${nw.net < 0 ? 'text-neg' : 'text-ink'}`}>{money(nw.net)}</p>
           <p className="mt-1 text-xs text-slate2">Everything you own minus everything you owe</p>
           <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
             <div>
@@ -382,7 +382,7 @@ export default function Dashboard() {
             <h2 className="font-display text-lg font-semibold text-ink">Spending this month</h2>
             <Link to="/spending" className="text-xs font-medium text-accent-strong hover:underline">View all</Link>
           </div>
-          <p className="font-num text-3xl font-semibold text-ink">{money(spendAnim)}</p>
+          <p ref={spendRef} className="font-num text-3xl font-semibold text-ink">{money(monthTotal)}</p>
           {spendingByCat.length === 0 ? (
             <p className="mt-3 text-sm text-slate2">Nothing logged yet this month.</p>
           ) : (
@@ -453,7 +453,8 @@ export default function Dashboard() {
               type="number"
               step="0.01"
               min="0"
-              autoFocus
+              inputMode="decimal"
+              autoFocus={!isCoarsePointer()}
               value={balanceInput}
               onChange={(e) => setBalanceInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') saveBalance() }}
