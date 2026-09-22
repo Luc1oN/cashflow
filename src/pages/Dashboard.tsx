@@ -6,7 +6,7 @@ import {
   Area, AreaChart, CartesianGrid, Line, ReferenceDot, ReferenceLine,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
-import { Pencil } from 'lucide-react'
+import { AlertOctagon, AlertTriangle, CheckCircle2, Info, Pencil } from 'lucide-react'
 import { isCoarsePointer, useCountUp, useMounted } from '../lib/anim'
 import { aggregateByCategory } from '../lib/categories'
 import { supabase } from '../lib/supabase'
@@ -16,6 +16,7 @@ import { useChartColors } from '../contexts/ThemeContext'
 import { useTable } from '../lib/useTable'
 import { buildForecast, cashPosition, creditCard, netWorth, perMonth, type ForecastDay } from '../lib/forecast'
 import { applySettlement, buildSettlementPlan, type SettlementPlan } from '../lib/settle'
+import { buildVerdict, safeToSpend, type SafeToSpend, type Verdict } from '../lib/verdict'
 import { money, moneyShort, titleCase } from '../lib/format'
 import type { Account, Bill, BudgetAlert, Expense, Income, Loan, PlannedExpense, Profile, SavingsGoal } from '../lib/types'
 import { Badge, Button, Card, Field, Modal, Money, PageHeader, Select, Skeleton, TextInput } from '../components/ui'
@@ -102,6 +103,20 @@ export default function Dashboard() {
   const monthlyIncome = income.rows.filter((i) => i.is_active).reduce((s, i) => s + perMonth(Number(i.amount), i.frequency), 0)
   const monthlyBills = bills.rows.filter((b) => b.is_active).reduce((s, b) => s + perMonth(Number(b.amount), b.frequency), 0)
   const pctUsed = card && Number(card.credit_limit) > 0 ? (Number(card.balance) / Number(card.credit_limit)) * 100 : 0
+
+  // The headline answer and the spendable number, both derived from the very
+  // forecast the chart below draws — so they can never contradict the picture.
+  const verdict = useMemo(
+    () => buildVerdict({ forecast, accounts: accounts.rows, income: income.rows, monthlyBills }),
+    [forecast, accounts.rows, income.rows, monthlyBills],
+  )
+  const spendable = useMemo(
+    () => safeToSpend({
+      forecast, accounts: accounts.rows, income: income.rows,
+      budgets: budgets.rows, expenses: expenses.rows,
+    }),
+    [forecast, accounts.rows, income.rows, budgets.rows, expenses.rows],
+  )
 
   const heroValue = card ? forecast.startAvailable : cashPosition(accounts.rows)
   const availRef = useCountUp<HTMLParagraphElement>(heroValue, money)
@@ -192,7 +207,6 @@ export default function Dashboard() {
   const showOnboarding = !profile?.onboarding_dismissed && (accounts.rows.length === 0 || income.rows.length === 0 || bills.rows.length === 0)
 
   const low = forecast.lowestAvailable
-  const lowTone = low.available < 0 ? 'text-claret' : low.available < 200 ? 'text-amber2' : 'text-ink'
 
   return (
     <div className="animate-rise">
@@ -230,6 +244,7 @@ export default function Dashboard() {
 
         <div className="relative flex flex-col gap-7 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-[260px]">
+            <VerdictBanner verdict={verdict} horizonDays={activeHorizon} />
             {card ? (
               <>
                 <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-white/80">
@@ -264,9 +279,9 @@ export default function Dashboard() {
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:w-[340px] lg:grid-cols-1">
+            <SafeToSpendTile spendable={spendable} known={verdict.kind !== 'insufficient'} />
             <GlassTile label="Monthly income" value={`+${money(monthlyIncome)}`} />
             <GlassTile label="Monthly bills" value={money(monthlyBills)} />
-            <GlassTile label={`${activeHorizon}-day low point`} value={money(low.available)} sub={`${format(parseISO(low.date), 'd MMM')}${low.available < 0 ? ' · over limit' : ''}`} />
           </div>
         </div>
       </div>
@@ -295,9 +310,7 @@ export default function Dashboard() {
         <p className="mb-4 text-sm text-slate2">
           {!hasData
             ? 'Add your card, salary and bills to bring the forecast to life.'
-            : forecast.firstOverLimit
-              ? <>You'd go <span className="font-medium text-claret">over your {money(forecast.limit)} limit on {format(parseISO(forecast.firstOverLimit), 'EEEE d MMM')}</span> — move a planned expense or trim a bill.</>
-              : <>You stay within your limit through {format(parseISO(forecast.days[forecast.days.length - 1].date), 'd MMM')}. Tightest day is {format(parseISO(low.date), 'd MMM')} with {money(low.available)} free.</>}
+            : <>Day by day to {format(parseISO(forecast.days[forecast.days.length - 1].date), 'd MMM')}. The marked dot is your tightest day, {format(parseISO(low.date), 'd MMM')} at {money(low.available)}.</>}
         </p>
         <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate2">
           <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: colors.moss }} /> Available credit</span>
@@ -576,6 +589,125 @@ function GlassTile({ label, value, sub }: { label: string; value: string; sub?: 
       <p className="text-[11px] font-medium uppercase tracking-wide text-white/75">{label}</p>
       <p className="mt-0.5 font-num text-lg font-semibold text-white">{value}</p>
       {sub && <p className="mt-0.5 text-[11px] text-white/70">{sub}</p>}
+    </div>
+  )
+}
+
+/**
+ * The plain-English answer to "am I OK?", above the figure that evidences it.
+ *
+ * The sentence itself carries the meaning — the icon and the dot colour only
+ * reinforce it — so the verdict still reads correctly in greyscale or to a
+ * screen reader.
+ */
+function VerdictBanner({ verdict, horizonDays }: { verdict: Verdict; horizonDays: number }) {
+  const { headline, detail, Icon, tone } = verdictCopy(verdict, horizonDays)
+  // The hero is a fixed blue-violet gradient, so the themed --warn/--neg tokens
+  // (tuned for dark surfaces) are unreadable here. A solid white pill with a
+  // dark coloured label gives the alert states real weight against that
+  // gradient — and keeps 6:1+ contrast — while "all clear" stays calm and
+  // translucent. Without this, "you go over your limit on Sunday" looks exactly
+  // as cheerful as "you're fine".
+  const style = {
+    calm: 'bg-white/15 text-white backdrop-blur-md',
+    warn: 'bg-white text-[#9a5b00]',
+    bad: 'bg-white text-[#c0173a]',
+  }[tone]
+  return (
+    <div className="mb-4">
+      <p className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold ${style}`}>
+        <Icon size={16} strokeWidth={2.4} aria-hidden className="shrink-0" />
+        {headline}
+      </p>
+      <p className="mt-2 max-w-md text-sm text-white/85">{detail}</p>
+    </div>
+  )
+}
+
+/**
+ * Turns the verdict data into the sentence a person would actually say.
+ *
+ * Deliberately avoids restating the headroom figure: the Safe to spend tile
+ * sits inches away showing exactly that number, and printing it twice in two
+ * different wordings reads like a bug. The sentence owns *when* and *what to
+ * do*; the tile owns *how much*. The breach case is the exception — how far
+ * short you'd go is a different number from what's spare today.
+ */
+function verdictCopy(v: Verdict, horizonDays: number) {
+  const day = (iso: string) => format(parseISO(iso), 'EEEE d MMM')
+  const shortDay = (iso: string) => format(parseISO(iso), 'd MMM')
+
+  if (v.kind === 'insufficient') {
+    return {
+      tone: 'calm' as const,
+      Icon: Info,
+      headline: 'Not enough to forecast yet',
+      detail: 'Add your card, your salary and your regular bills and this will tell you where you stand.',
+    }
+  }
+
+  if (v.kind === 'breach') {
+    const when = v.daysToBreach === 0 ? 'today' : v.daysToBreach === 1 ? 'tomorrow' : day(v.breachDate!)
+    const over = moneyShort(Math.abs(v.worstOverrun ?? 0))
+    return {
+      tone: 'bad' as const,
+      Icon: AlertOctagon,
+      headline: v.basis === 'credit' ? `You go over your limit ${when}` : `You run out of cash ${when}`,
+      detail: v.daysToBreach !== null && v.daysToBreach > 1
+        ? `That's in ${v.daysToBreach} days, and you'd be about ${over} short at the worst of it. Move a planned expense or trim a bill.`
+        : `You'd be about ${over} short at the worst of it. Move a planned expense or trim a bill.`,
+    }
+  }
+
+  if (v.kind === 'tight') {
+    return {
+      tone: 'warn' as const,
+      Icon: AlertTriangle,
+      headline: `It gets tight on ${day(v.lowest.date)}`,
+      detail: v.payday
+        ? `That leaves you less than a week of usual outgoings in reserve — worth watching until payday on ${shortDay(v.payday)}.`
+        : 'That leaves you less than a week of usual outgoings in reserve.',
+    }
+  }
+
+  return {
+    tone: 'calm' as const,
+    Icon: CheckCircle2,
+    headline: v.payday && v.lowestBeforePayday ? "You're fine until payday" : `You're fine for the next ${horizonDays} days`,
+    detail: v.payday && v.lowestBeforePayday
+      ? `Your tightest day is ${shortDay(v.lowest.date)}, just before payday on ${shortDay(v.payday)}.`
+      : `Your tightest day is ${shortDay(v.lowest.date)}.`,
+  }
+}
+
+/**
+ * What you could spend today without the forecast hitting the wall before the
+ * next payday. Given more visual weight than the other tiles because it is the
+ * one number here you act on.
+ */
+function SafeToSpendTile({ spendable, known }: { spendable: SafeToSpend; known: boolean }) {
+  const { total, perDay, days, until, untilIsPayday, limitedBy } = spendable
+  const payday = format(parseISO(until), 'd MMM')
+  // Whole units, not cents: this is guidance for a decision in a shop, not a
+  // balance. Rounding down also keeps the number honest as a ceiling.
+  const sub = !known
+    ? 'Add your card and salary'
+    : total === 0
+      ? untilIsPayday ? `Nothing spare before payday, ${payday}` : 'Nothing spare right now'
+      : limitedBy === 'budget'
+        ? `Held to your monthly budget · ${moneyShort(perDay)}/day`
+        : untilIsPayday
+          ? `Until payday, ${payday} · ${moneyShort(perDay)}/day`
+          : `Over the next ${days} days · ${moneyShort(perDay)}/day`
+
+  return (
+    <div
+      className="rounded-[14px] border border-white/25 bg-white/20 px-4 py-3 backdrop-blur-md"
+      title="How much more you could spend today and still stay inside your limit up to your next payday."
+    >
+      <p className="text-[11px] font-medium uppercase tracking-wide text-white/85">Safe to spend</p>
+      <p className="mt-0.5 font-num text-2xl font-semibold text-white">{known ? moneyShort(total) : '—'}</p>
+      <p className="mt-0.5 text-[11px] text-white/75">{sub}</p>
     </div>
   )
 }
