@@ -41,13 +41,15 @@ export default function Planned() {
   const Row = ({ p }: { p: PlannedExpense }) => (
     <li className={`flex items-center justify-between gap-3 px-5 py-3 transition-opacity ${p.is_completed ? 'opacity-50' : ''}`}>
       <div className="flex min-w-0 items-center gap-3">
-        <input
-          type="checkbox"
-          checked={p.is_completed}
-          onChange={() => update(p.id, { is_completed: !p.is_completed })}
-          aria-label={p.is_completed ? `Mark ${p.name} as not paid` : `Mark ${p.name} as paid`}
-          className="h-4 w-4 accent-accent"
-        />
+        <label className="-m-2 grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-lg p-2 hover:bg-mist">
+          <input
+            type="checkbox"
+            checked={p.is_completed}
+            onChange={() => update(p.id, { is_completed: !p.is_completed })}
+            aria-label={p.is_completed ? `Mark ${p.name} as not paid` : `Mark ${p.name} as paid`}
+            className="h-5 w-5 accent-accent"
+          />
+        </label>
         <div className="min-w-0">
           <p className={`truncate font-medium ${p.is_completed ? 'text-slate2 line-through' : 'text-ink'}`}>
             {p.name} <Badge>{titleCase(p.category)}</Badge>
@@ -57,7 +59,7 @@ export default function Planned() {
       </div>
       <div className="flex items-center gap-4">
         <span className="font-num font-semibold text-ink">−{money(Number(p.amount))}</span>
-        <button onClick={() => open(p)} className="text-sm text-slate2 hover:text-ink">Edit</button>
+        <button onClick={() => open(p)} className="-mr-2 grid h-11 min-w-[44px] shrink-0 place-items-center rounded-lg px-2 text-sm font-medium text-slate2 hover:bg-mist hover:text-ink">Edit</button>
       </div>
     </li>
   )

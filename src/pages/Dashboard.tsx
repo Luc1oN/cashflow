@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useId, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { differenceInCalendarDays, format, parseISO, startOfMonth } from 'date-fns'
@@ -30,6 +30,9 @@ export default function Dashboard() {
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const colors = useChartColors()
+  // Gradient ids must be unique per mounted chart — a hardcoded id means a
+  // second chart on the page steals the first one's fill.
+  const gradientId = useId().replace(/:/g, '')
 
   const accounts = useTable<Account>('accounts')
   const bills = useTable<Bill>('bills')
@@ -253,7 +256,7 @@ export default function Dashboard() {
                 <p ref={availRef} className="mt-2 font-num text-[clamp(40px,8vw,54px)] font-semibold leading-none tracking-tight">{money(heroValue)}</p>
                 <p className="mt-2 text-sm text-white/85">
                   of {money(forecast.limit)} limit · {money(Number(card.balance))} owed
-                  <button onClick={openEditBalance} aria-label="Edit card balance" title="Edit balance" className="ml-1.5 align-middle text-white/70 hover:text-white">
+                  <button onClick={openEditBalance} aria-label="Edit card balance" title="Edit balance" className="ml-1 inline-grid h-9 w-9 place-items-center rounded-lg align-middle text-white/80 hover:bg-white/15 hover:text-white">
                     <Pencil size={14} aria-hidden className="inline" />
                   </button>
                 </p>
@@ -326,11 +329,11 @@ export default function Dashboard() {
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
               <defs>
-                <linearGradient id="availFill" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={`avail-${gradientId}`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={colors.moss} stopOpacity={0.25} />
                   <stop offset="100%" stopColor={colors.moss} stopOpacity={0.02} />
                 </linearGradient>
-                <linearGradient id="vaultFill" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={`vault-${gradientId}`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={colors.violet} stopOpacity={0.22} />
                   <stop offset="100%" stopColor={colors.violet} stopOpacity={0.02} />
                 </linearGradient>
@@ -343,8 +346,8 @@ export default function Dashboard() {
               {forecast.limit > 0 && (
                 <ReferenceLine y={forecast.limit} stroke={colors.amber} strokeDasharray="5 4" label={{ value: `CC limit ${moneyShort(forecast.limit)}`, position: 'insideTopRight', fontSize: 10, fill: colors.amber }} />
               )}
-              <Area type="monotone" dataKey="available" name="Available credit" stroke={colors.moss} strokeWidth={2} fill="url(#availFill)" />
-              <Area type="monotone" dataKey="vault" name="Vault" stroke={colors.violet} strokeWidth={2} fill="url(#vaultFill)" dot={false} />
+              <Area type="monotone" dataKey="available" name="Available credit" stroke={colors.moss} strokeWidth={2} fill={`url(#avail-${gradientId})`} />
+              <Area type="monotone" dataKey="vault" name="Vault" stroke={colors.violet} strokeWidth={2} fill={`url(#vault-${gradientId})`} dot={false} />
               {scenarioForecast && (
                 <Line type="monotone" dataKey="scenarioAvailable" name="Scenario" stroke={colors.mossdeep} strokeWidth={2} strokeDasharray="6 4" dot={false} />
               )}

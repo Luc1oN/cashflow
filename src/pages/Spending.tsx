@@ -166,7 +166,7 @@ export default function Spending() {
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="font-num font-semibold text-ink">−{money(Number(x.amount))}</span>
-                      <button onClick={() => openExpense(x)} className="text-sm text-slate2 hover:text-ink">Edit</button>
+                      <button onClick={() => openExpense(x)} className="-mr-2 grid h-11 min-w-[44px] shrink-0 place-items-center rounded-lg px-2 text-sm font-medium text-slate2 hover:bg-mist hover:text-ink">Edit</button>
                     </div>
                   </li>
                 ))}
@@ -197,7 +197,7 @@ export default function Spending() {
                       <span className="font-medium text-ink">
                         {b.label} {!b.is_active && <Badge>Off</Badge>}
                       </span>
-                      <button onClick={() => openBudget(b)} className="text-xs text-slate2 hover:text-ink">Edit</button>
+                      <button onClick={() => openBudget(b)} className="-mr-1 grid h-9 min-w-[44px] shrink-0 place-items-center rounded-lg px-2 text-xs font-medium text-slate2 hover:bg-mist hover:text-ink">Edit</button>
                     </div>
                     <p className="mb-2 font-num text-xs text-slate2">{money(spent)} of {money(limit)} {over && <Badge tone="bad">Over</Badge>}</p>
                     <div className="h-2 overflow-hidden rounded-full bg-mist">

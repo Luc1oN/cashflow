@@ -25,7 +25,9 @@ const nav: NavItem[] = [
 ]
 
 // The four pinned to the mobile bottom tab bar (the rest live in the menu).
-const primaryPaths = ['/', '/planned', '/accounts', '/savings']
+// Spending is here because it is the one thing you open on a phone mid-errand;
+// Goals is a monthly check-in, so it lives in the menu instead.
+const primaryPaths = ['/', '/spending', '/planned', '/accounts']
 const primary = primaryPaths
   .map((p) => nav.find((n) => n.to === p))
   .filter((n): n is NavItem => Boolean(n))

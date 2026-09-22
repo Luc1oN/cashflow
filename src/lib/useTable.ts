@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from './supabase'
 import { useToast } from '../contexts/ToastContext'
 import { titleCase } from './format'
+import { friendlyError } from './errors'
 
 /**
  * Table CRUD on TanStack Query: cached reads, automatic invalidation,
@@ -31,31 +32,34 @@ export function useTable<T extends { id: string }>(table: string, orderBy = 'cre
   const insertMutation = useMutation({
     mutationFn: async (values: Partial<T>) => {
       const { error } = await supabase.from(table).insert(values as Record<string, unknown>)
-      if (error) throw new Error(error.message)
+      if (error) throw new Error(friendlyError(error.message, `Could not add this ${noun.toLowerCase()}`))
     },
     onSuccess: () => { invalidate(); toast(`${noun} added`) },
+    onError: (err) => toast(friendlyError(err), 'bad'),
   })
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, values }: { id: string; values: Partial<T> }) => {
       const { error } = await supabase.from(table).update(values as Record<string, unknown>).eq('id', id)
-      if (error) throw new Error(error.message)
+      if (error) throw new Error(friendlyError(error.message, `Could not update this ${noun.toLowerCase()}`))
     },
     onSuccess: () => { invalidate(); toast(`${noun} updated`) },
+    onError: (err) => toast(friendlyError(err), 'bad'),
   })
 
   const removeMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from(table).delete().eq('id', id)
-      if (error) throw new Error(error.message)
+      if (error) throw new Error(friendlyError(error.message, `Could not delete this ${noun.toLowerCase()}`))
     },
     onSuccess: () => { invalidate(); toast(`${noun} deleted`, 'neutral') },
+    onError: (err) => toast(friendlyError(err), 'bad'),
   })
 
   return {
     rows: query.data ?? [],
     loading: query.isLoading,
-    error: query.error ? (query.error as Error).message : null,
+    error: query.error ? friendlyError(query.error, 'Could not load your data') : null,
     refresh: () => invalidate(),
     insert: (values: Partial<T>) => insertMutation.mutateAsync(values),
     update: (id: string, values: Partial<T>) => updateMutation.mutateAsync({ id, values }),

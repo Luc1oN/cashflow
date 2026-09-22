@@ -1,6 +1,7 @@
 import { type ReactNode, type FormEvent, useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { money } from '../lib/format'
+import { friendlyError } from '../lib/errors'
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return <div className={`rounded-[22px] border border-line bg-surface shadow-card ${className}`}>{children}</div>
@@ -197,14 +198,14 @@ export function EntityForm({ onSubmit, onDelete, children, submitLabel = 'Save' 
     e.preventDefault()
     setBusy(true)
     setError(null)
-    try { await onSubmit() } catch (err) { setError(err instanceof Error ? err.message : 'Something went wrong') }
+    try { await onSubmit() } catch (err) { setError(friendlyError(err)) }
     setBusy(false)
   }
 
   const handleDelete = async () => {
     if (!confirmingDelete) { setConfirmingDelete(true); return }
     setBusy(true)
-    try { await onDelete?.() } catch (err) { setError(err instanceof Error ? err.message : 'Delete failed') }
+    try { await onDelete?.() } catch (err) { setError(friendlyError(err, 'Delete failed')) }
     setBusy(false)
   }
 

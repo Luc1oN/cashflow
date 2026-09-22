@@ -195,6 +195,19 @@ export default function Settings() {
 
         <Card className="space-y-4 p-5">
           <h2 className="font-display text-lg font-semibold text-ink">Your data</h2>
+          {profile.onboarding_dismissed && (
+            <div className="border-b border-line pb-4">
+              <p className="mb-1 text-sm font-medium text-ink">Setup checklist</p>
+              <p className="mb-3 text-xs text-slate2">
+                Dismissing the checklist on the dashboard used to be permanent. Bring it back to see what's still
+                missing.
+              </p>
+              <Button variant="ghost" onClick={() => updateProfile({ onboarding_dismissed: false })}>
+                Show setup checklist again
+              </Button>
+            </div>
+          )}
+
           <div>
             <p className="mb-2 text-sm font-medium text-ink">Export as CSV</p>
             <div className="flex flex-wrap gap-2">

@@ -93,7 +93,7 @@ export default function Bills() {
                   </div>
                   <div className="flex items-center gap-4">
                     <span className="font-num font-semibold text-ink">−{money(Number(b.amount))}</span>
-                    <button onClick={() => open(b)} className="text-sm text-slate2 hover:text-ink">Edit</button>
+                    <button onClick={() => open(b)} className="-mr-2 grid h-11 min-w-[44px] shrink-0 place-items-center rounded-lg px-2 text-sm font-medium text-slate2 hover:bg-mist hover:text-ink">Edit</button>
                   </div>
                 </li>
               ))}

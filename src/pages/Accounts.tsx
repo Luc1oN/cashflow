@@ -65,7 +65,7 @@ export default function Accounts() {
                   <p className="font-medium text-ink">{a.name}</p>
                   {a.is_primary && <Badge tone="good">Primary</Badge>}
                 </div>
-                <button onClick={() => open(a)} className="text-sm text-slate2 hover:text-ink">Edit</button>
+                <button onClick={() => open(a)} className="-mr-2 grid h-11 min-w-[44px] shrink-0 place-items-center rounded-lg px-2 text-sm font-medium text-slate2 hover:bg-mist hover:text-ink">Edit</button>
               </div>
               <CreditCardVisual name={a.name} holder={holder} last4={last4(a.id)} />
               <p className="mt-4 text-xs font-medium uppercase tracking-wide text-slate2">Balance owed</p>
@@ -93,7 +93,7 @@ export default function Accounts() {
                   <Badge tone="neutral">{titleCase(a.type)}</Badge>{' '}
                   {a.is_primary && <Badge tone="good">Primary</Badge>}
                 </div>
-                <button onClick={() => open(a)} className="text-sm text-slate2 hover:text-ink">Edit</button>
+                <button onClick={() => open(a)} className="-mr-2 grid h-11 min-w-[44px] shrink-0 place-items-center rounded-lg px-2 text-sm font-medium text-slate2 hover:bg-mist hover:text-ink">Edit</button>
               </div>
               <p className={`mt-3 font-num text-2xl font-semibold ${Number(a.balance) < 0 ? 'text-neg' : 'text-ink'}`}>{money(Number(a.balance))}</p>
               <p className="mt-1 text-xs text-slate2">This balance is the starting point of your forecast</p>
