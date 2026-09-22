@@ -28,14 +28,14 @@ Currency defaults to GBP and is changeable per-user in **Settings** — pick EUR
 - **Frontend:** React 18, TypeScript, Vite, Tailwind CSS (dark mode via CSS variables), React Router (lazy-loaded routes), TanStack Query, Recharts, date-fns, PapaParse
 - **Backend:** Supabase — Postgres with Row-Level Security (every table scoped to the signed-in user), email/password auth, a private `receipts` storage bucket, and an `apply_settlement()` Postgres function so settling is a single all-or-nothing transaction
 - **Quality:** Vitest unit tests on the forecast and settlement engines (`npm test`), GitHub Actions CI on every push, error boundary, code-split bundles
-- **Schema:** five SQL migrations in `supabase/migrations/` — run them **in order**
+- **Schema:** eight SQL migrations in `supabase/migrations/` — run them **in order**
 
 ## Setup
 
 ### 1. Create the Supabase project
 
 1. Go to [supabase.com](https://supabase.com), create a project, and pick a strong database password.
-2. In the dashboard open **SQL Editor** and run each file in `supabase/migrations/` **in order** (`...01_init.sql` through `...05_security.sql`). Or use the CLI: `supabase link --project-ref <ref>` then `supabase db push`. **`...05_security.sql` is not optional** — see [Security](#security) below.
+2. In the dashboard open **SQL Editor** and run each file in `supabase/migrations/` **in order** (`...01_init.sql` through `...08_reverse_settlement.sql`). Or use the CLI: `supabase link --project-ref <ref>` then `supabase db push`. **`...05_security.sql` is not optional** — see [Security](#security) below.
 3. In **Authentication → Providers**, make sure **Email** is enabled. Keep "Confirm email" on if others will sign up.
 4. **Turn off public sign-ups** unless you actually want them: **Authentication → Sign In / Providers → Allow new users to sign up**. This is a personal app backed by *your* Supabase project and *your* Anthropic key — every account that can sign up can also spend advisor credit against that key. Leave sign-ups on only while you're inviting someone; RLS keeps their data separate, but it doesn't stop them costing you money.
 5. The Supabase **Project URL** and **anon public** key come from `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` at build time, falling back to the literals in `src/lib/supabase.ts`. The anon key is safe to be public — Row-Level Security protects your data, not key secrecy. (Never put the `service_role` key in the repo; it bypasses RLS.) To fork this for your own project, set those two as repository variables (or edit the fallbacks).
@@ -95,10 +95,18 @@ Export each entity from Base44 as CSV, drop the Base44 system columns (`id`, `cr
 
 Settling calls the `apply_settlement()` Postgres function via RPC. The balance change, ledger rows, recurring date rolls, savings top-ups, planned tick-offs, and the profile stamp all commit in **one database transaction** — a dropped connection can never leave your money half-applied. The function runs as *invoker*, so Row-Level Security still protects every row it touches. Each settlement and its line items land in the `settlements` and `transactions` tables, which power the History page.
 
+**Undo.** Settling used to be the one action with no way back. `apply_settlement()` now snapshots everything it is about to overwrite — each bill's and income stream's previous date and active flag, which planned expenses it actually ticked (not ones you'd already ticked), the prior `last_settled_date` — into `settlements.undo_data`. **Activity → Undo** on the most recent settlement calls `reverse_settlement()`, which puts all of it back, takes the savings top-ups back out, moves the balance by the opposite of the net, and stamps `reversed_at`.
+
+The settlement and its ledger rows are **voided, not deleted** — an audit trail that erases its own mistakes isn't one. Only the newest un-reversed settlement can be undone, since reversing an older one would restore dates that later settlements have already rolled past; where two settlements share a timestamp the check fails closed. Settlements made before this migration carry no snapshot and report that plainly rather than half-undoing.
+
 ## Security
 
 What protects the data, and what you have to set up:
 
+- **Settlement is verified and reversible.** `apply_settlement()` refuses a
+  settlement whose net doesn't match the sum of its own ledger items, so the
+  balance and the audit trail can never describe different events, and every
+  settlement can be undone from Activity.
 - **Row-Level Security on every table.** Each policy checks `auth.uid()` on both
   `USING` (which rows you may touch) *and* `WITH CHECK` (what the row may look
   like afterwards). The `WITH CHECK` half arrived in `...05_security.sql`;

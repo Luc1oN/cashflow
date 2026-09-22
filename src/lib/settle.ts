@@ -1,7 +1,7 @@
 import { addDays, format, isAfter, parseISO, startOfDay } from 'date-fns'
 import { supabase } from './supabase'
 import { occurrences } from './forecast'
-import type { Account, Bill, Income, PlannedExpense, SavingsGoal } from './types'
+import type { Account, Bill, Income, PlannedExpense, SavingsGoal, Settlement } from './types'
 
 export interface SettlementItem {
   label: string
@@ -130,4 +130,28 @@ export async function applySettlement(plan: SettlementPlan): Promise<void> {
     p_planned_done: plan._plannedDone,
   })
   if (error) throw new Error(error.message)
+}
+
+/**
+ * Undo the most recent settlement: puts the balance, recurring dates, savings
+ * top-ups, planned tick-offs and the last-settled stamp back exactly as they
+ * were, then marks the settlement (and its ledger rows) as voided rather than
+ * deleting them.
+ *
+ * All the guards live in the database — only the newest un-reversed settlement
+ * qualifies, and only if it captured a snapshot when it applied — so the error
+ * messages here are the server's own wording.
+ */
+export async function reverseSettlement(settlementId: string): Promise<void> {
+  const { error } = await supabase.rpc('reverse_settlement', { p_settlement_id: settlementId })
+  if (error) throw new Error(error.message)
+}
+
+/** Whether the Undo affordance should be offered for a settlement. */
+export function canReverse(settlement: Settlement, newestUnreversedId: string | null): boolean {
+  return (
+    settlement.reversed_at === null &&
+    settlement.undo_data != null &&
+    settlement.id === newestUnreversedId
+  )
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { addDays, format, startOfDay } from 'date-fns'
-import { buildSettlementPlan } from './settle'
+import { buildSettlementPlan, canReverse } from './settle'
 import type { Account, Bill, Income, PlannedExpense, SavingsGoal } from './types'
 
 const base = { id: 'x', user_id: 'u', created_at: '', updated_at: '', notes: null }
@@ -75,5 +75,29 @@ describe('buildSettlementPlan', () => {
       lastSettledDate: d(-1),
     })
     expect(plan.account?.id).toBe('b')
+  })
+})
+
+describe('canReverse', () => {
+  const base = {
+    id: 's1', user_id: 'u', created_at: '', from_date: '', to_date: '',
+    net: 0, item_count: 0, account_id: null,
+    reversed_at: null as string | null, undo_data: {} as unknown,
+  }
+
+  it('offers undo only on the newest settlement still standing', () => {
+    expect(canReverse(base, 's1')).toBe(true)
+    expect(canReverse(base, 's2')).toBe(false)
+    expect(canReverse(base, null)).toBe(false)
+  })
+
+  it('does not offer undo twice', () => {
+    expect(canReverse({ ...base, reversed_at: '2026-09-22T10:00:00Z' }, 's1')).toBe(false)
+  })
+
+  it('does not offer undo when nothing was captured to undo with', () => {
+    // Settlements made before undo existed carry no snapshot, so the database
+    // would refuse — don't show a button that cannot work.
+    expect(canReverse({ ...base, undo_data: null }, 's1')).toBe(false)
   })
 })

@@ -34,6 +34,11 @@ export interface Settlement {
   net: number
   item_count: number
   account_id: string | null
+  /** Set once the settlement has been undone; the rows are voided, not deleted. */
+  reversed_at: string | null
+  /** Snapshot of what this settlement overwrote. Null on settlements made
+   *  before undo existed, which therefore cannot be undone automatically. */
+  undo_data: unknown | null
 }
 
 export interface Transaction {
