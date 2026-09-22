@@ -5,6 +5,10 @@ export default class ErrorBoundary extends Component<{ children: ReactNode }, { 
 
   static getDerivedStateFromError(error: Error) { return { error } }
 
+  componentDidCatch(error: Error, info: unknown) {
+    console.error('Unhandled error in CashFlow', error, info)
+  }
+
   render() {
     if (this.state.error) {
       return (
@@ -13,7 +17,10 @@ export default class ErrorBoundary extends Component<{ children: ReactNode }, { 
             <h1 className="font-display text-xl font-semibold text-ink">Something went wrong</h1>
             <p className="mt-2 text-sm text-slate2">{this.state.error.message}</p>
             <button
-              onClick={() => { this.setState({ error: null }); window.location.assign('/') }}
+              // The app is served from a sub-path (/cashflow/) and routes live in
+              // the hash, so assigning '/' navigated off the app to a 404 rather
+              // than home. BASE_URL + '#/' is the real dashboard URL.
+              onClick={() => { this.setState({ error: null }); window.location.assign(`${import.meta.env.BASE_URL}#/`) }}
               className="mt-4 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent"
             >
               Back to dashboard

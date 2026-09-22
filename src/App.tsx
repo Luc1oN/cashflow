@@ -5,6 +5,7 @@ import { useAuth } from './contexts/AuthContext'
 import { supabase } from './lib/supabase'
 import { setCurrency, type CurrencyCode } from './lib/format'
 import AuthPage from './pages/AuthPage'
+import UpdatePassword from './pages/UpdatePassword'
 
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Advisor = lazy(() => import('./pages/Advisor'))
@@ -38,11 +39,14 @@ function CurrencyGate({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
-  const { session, loading } = useAuth()
+  const { session, loading, recovering } = useAuth()
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center bg-paper text-slate2">Loading…</div>
   }
   if (!session) return <AuthPage />
+  // Checked before the app renders: a reset link creates a real session, so
+  // without this gate it would just log the user in and never reset anything.
+  if (recovering) return <UpdatePassword />
   return (
     <CurrencyGate>
       <Routes>

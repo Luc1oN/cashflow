@@ -1,4 +1,5 @@
 import { type ReactNode, type FormEvent, useEffect, useRef, useState } from 'react'
+import { X } from 'lucide-react'
 import { money } from '../lib/format'
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
@@ -52,18 +53,25 @@ export function Field({ label, children, error }: { label: string; children: Rea
   )
 }
 
-const inputClass = 'w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-slate2/70 focus:outline-none focus:ring-2 focus:ring-accent/40'
+// min-h-[44px]: a comfortable touch target on phone/tablet. The 16px font size
+// that stops iOS zooming on focus is applied globally in index.css, so it also
+// covers inputs that don't come through this kit.
+const inputClass = 'block w-full min-h-[44px] rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-slate2/70 focus:outline-none focus:ring-2 focus:ring-accent/40'
 
-export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className={inputClass} />
+export function TextInput({ className = '', ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
+  // A decimal keypad for money fields on iOS/Android, unless the caller says
+  // otherwise. type="number" alone gives a keypad with no decimal point on some
+  // Android keyboards, which makes entering "12.50" impossible.
+  const inputMode = props.inputMode ?? (props.type === 'number' ? 'decimal' : undefined)
+  return <input {...props} inputMode={inputMode} className={`${inputClass} ${className}`} />
 }
 
-export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select {...props} className={inputClass} />
+export function Select({ className = '', ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return <select {...props} className={`${inputClass} ${className}`} />
 }
 
-export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea {...props} rows={2} className={inputClass} />
+export function TextArea({ className = '', ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <textarea rows={2} {...props} className={`${inputClass} ${className}`} />
 }
 
 export function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
@@ -139,7 +147,9 @@ export function Modal({ title, open, onClose, children }: { title: string; open:
         paddingTop: 'max(1rem, env(safe-area-inset-top))',
         paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
       }}
-      onClick={onClose}
+      // Only dismiss when the press *starts* on the backdrop: otherwise selecting
+      // text inside the form and releasing outside it throws the form away.
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
         ref={panelRef}
@@ -150,11 +160,12 @@ export function Modal({ title, open, onClose, children }: { title: string; open:
         // push the actions off-screen; my-auto keeps it centred but lets a tall
         // form scroll inside the overlay.
         className="my-auto max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-2xl bg-surface p-6 shadow-card animate-rise"
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-xl font-semibold text-ink">{title}</h2>
-          <button onClick={onClose} aria-label="Close" className="rounded p-1 text-slate2 hover:bg-mist">✕</button>
+          <button onClick={onClose} aria-label="Close" className="-mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-lg text-slate2 hover:bg-mist hover:text-ink">
+            <X size={20} aria-hidden />
+          </button>
         </div>
         {children}
       </div>
@@ -172,6 +183,15 @@ export function EntityForm({ onSubmit, onDelete, children, submitLabel = 'Save' 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+
+  // Disarm the delete confirmation by itself. Without this the button stays in
+  // "Really delete?" state indefinitely, so a stray tap now and an absent-minded
+  // tap later combine into a deletion the user never consciously confirmed.
+  useEffect(() => {
+    if (!confirmingDelete) return
+    const id = setTimeout(() => setConfirmingDelete(false), 5000)
+    return () => clearTimeout(id)
+  }, [confirmingDelete])
 
   const handle = async (e: FormEvent) => {
     e.preventDefault()
@@ -194,9 +214,14 @@ export function EntityForm({ onSubmit, onDelete, children, submitLabel = 'Save' 
       {error && <p className="text-sm text-claret" role="alert">{error}</p>}
       <div className="flex items-center justify-between pt-2">
         {onDelete ? (
-          <Button variant="danger" onClick={handleDelete} disabled={busy}>
-            {confirmingDelete ? 'Really delete?' : 'Delete'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="danger" onClick={handleDelete} disabled={busy}>
+              {confirmingDelete ? 'Really delete?' : 'Delete'}
+            </Button>
+            {confirmingDelete && (
+              <Button variant="ghost" onClick={() => setConfirmingDelete(false)} disabled={busy}>Cancel</Button>
+            )}
+          </div>
         ) : <span />}
         <Button type="submit" disabled={busy}>{busy ? 'Saving…' : submitLabel}</Button>
       </div>

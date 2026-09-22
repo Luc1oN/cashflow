@@ -4,17 +4,49 @@
 //
 //   supabase functions deploy bill-reminders
 //   supabase secrets set RESEND_API_KEY=re_xxx REMINDER_FROM="CashFlow <bills@yourdomain.com>"
+//   supabase secrets set CRON_SECRET="$(openssl rand -hex 32)"
+//
+// CRON_SECRET is required. This function runs with the service-role key and
+// emails every user, so without its own check the only thing standing between
+// the internet and a fleet-wide mail blast is the URL — and if Supabase's JWT
+// gate is on, *any* signed-in user's token also gets through it. The shared
+// secret means only the scheduler can fire it.
 //
 // Then in the dashboard: Integrations -> Cron -> new job:
 //   select cron.schedule('bill-reminders', '0 8 * * *', $$
 //     select net.http_post(
 //       url := 'https://<ref>.functions.supabase.co/bill-reminders',
-//       headers := '{"Authorization": "Bearer <service-role-key>"}'::jsonb
+//       headers := '{"Authorization": "Bearer <service-role-key>", "x-cron-secret": "<CRON_SECRET>"}'::jsonb
 //     ) $$);
 
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
-Deno.serve(async () => {
+/** Constant-time compare, so a wrong secret can't be recovered a byte at a time. */
+function secretMatches(provided: string, expected: string): boolean {
+  const a = new TextEncoder().encode(provided)
+  const b = new TextEncoder().encode(expected)
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i]
+  return diff === 0
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method !== 'POST') {
+    return new Response('Method not allowed', { status: 405, headers: { Allow: 'POST' } })
+  }
+
+  // Fail closed: an unset secret disables the function rather than leaving it open.
+  const cronSecret = Deno.env.get('CRON_SECRET')
+  if (!cronSecret) {
+    console.error('CRON_SECRET is not set — refusing to run.')
+    return new Response('Not configured', { status: 503 })
+  }
+  const provided = req.headers.get('x-cron-secret') ?? ''
+  if (!secretMatches(provided, cronSecret)) {
+    return new Response('Forbidden', { status: 403 })
+  }
+
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, // service role: runs across all users

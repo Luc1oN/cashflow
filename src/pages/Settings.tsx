@@ -7,10 +7,11 @@ import { useToast } from '../contexts/ToastContext'
 import { exportTableCsv, isRevolutCsv, parseExpensesCsv, parseRevolutCsv, type ParsedExpenseRow, type ParsedIncomeRow } from '../lib/csv'
 import { getCurrency, titleCase } from '../lib/format'
 import type { Profile } from '../lib/types'
-import { Button, Card, Field, Modal, PageHeader, Select, Skeleton, Toggle } from '../components/ui'
+import { Button, Card, Field, Modal, PageHeader, Select, Skeleton, TextInput, Toggle } from '../components/ui'
 
 const EXPORT_TABLES = ['accounts', 'income', 'bills', 'savings_goals', 'planned_expenses', 'expenses', 'budget_alerts', 'loans', 'transactions']
 const HORIZONS = [30, 60, 90, 180, 365]
+const MIN_PASSWORD = 10
 
 export default function Settings() {
   const { user, signOut } = useAuth()
@@ -34,7 +35,37 @@ export default function Settings() {
   const [importIncome, setImportIncome] = useState(true)
   const [importing, setImporting] = useState(false)
   const [exporting, setExporting] = useState<string | null>(null)
-  const [prefs, setPrefs] = useState({ notif: true, roundups: false, biometric: true })
+
+  const [passwordOpen, setPasswordOpen] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordBusy, setPasswordBusy] = useState(false)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+
+  const [signOutAllOpen, setSignOutAllOpen] = useState(false)
+  const [signOutAllBusy, setSignOutAllBusy] = useState(false)
+
+  const changePassword = async () => {
+    if (newPassword !== confirmPassword) { setPasswordError('Those two passwords don\u2019t match.'); return }
+    if (newPassword.length < MIN_PASSWORD) { setPasswordError(`Use at least ${MIN_PASSWORD} characters.`); return }
+    setPasswordBusy(true)
+    setPasswordError(null)
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    setPasswordBusy(false)
+    if (error) { setPasswordError(error.message); return }
+    setPasswordOpen(false)
+    toast('Password changed')
+  }
+
+  const signOutEverywhere = async () => {
+    setSignOutAllBusy(true)
+    // scope: 'global' revokes every refresh token for this user, so the other
+    // devices are signed out too rather than just this browser forgetting.
+    const { error } = await supabase.auth.signOut({ scope: 'global' })
+    setSignOutAllBusy(false)
+    if (error) { toast(error.message, 'bad'); return }
+    setSignOutAllOpen(false)
+  }
 
   const updateProfile = async (values: Partial<Profile>, reload = false) => {
     const { error } = await supabase.from('profiles').update(values).eq('id', user!.id)
@@ -130,14 +161,34 @@ export default function Settings() {
               ))}
             </div>
           </div>
-          <div className="space-y-3 border-t border-line pt-4">
-            <Toggle checked={prefs.notif} onChange={(v) => setPrefs({ ...prefs, notif: v })} label="Push notifications" />
-            <Toggle checked={prefs.roundups} onChange={(v) => setPrefs({ ...prefs, roundups: v })} label="Round-up savings" />
-            <Toggle checked={prefs.biometric} onChange={(v) => setPrefs({ ...prefs, biometric: v })} label="Face ID lock" />
+        </Card>
+
+        <Card className="space-y-4 p-5">
+          <h2 className="font-display text-lg font-semibold text-ink">Security</h2>
+
+          <div>
+            <p className="mb-1 text-sm font-medium text-ink">Password</p>
+            <p className="mb-3 text-xs text-slate2">
+              Signed in as {user?.email}. Changing your password does not sign out your other devices — use the button
+              below for that.
+            </p>
+            <Button variant="ghost" onClick={() => { setPasswordOpen(true); setPasswordError(null); setNewPassword(''); setConfirmPassword('') }}>
+              Change password
+            </Button>
           </div>
+
           <div className="border-t border-line pt-4">
-            <button onClick={signOut} className="flex w-full items-center justify-between text-sm font-medium text-neg">
-              Sign out <span aria-hidden>›</span>
+            <p className="mb-1 text-sm font-medium text-ink">Signed-in devices</p>
+            <p className="mb-3 text-xs text-slate2">
+              You use CashFlow on desktop, iPad and phone. If one of them is lost, stolen or shared, this ends every
+              session everywhere — including this one.
+            </p>
+            <Button variant="ghost" onClick={() => setSignOutAllOpen(true)}>Sign out of all devices</Button>
+          </div>
+
+          <div className="border-t border-line pt-4">
+            <button onClick={signOut} className="flex min-h-[44px] w-full items-center justify-between text-sm font-medium text-neg">
+              Sign out on this device <span aria-hidden>›</span>
             </button>
           </div>
         </Card>
@@ -179,6 +230,36 @@ export default function Settings() {
           </div>
         </Card>
       </div>
+
+      <Modal title="Change password" open={passwordOpen} onClose={() => setPasswordOpen(false)}>
+        <div className="space-y-4 text-sm">
+          <Field label="New password">
+            <TextInput type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoComplete="new-password" minLength={MIN_PASSWORD} />
+          </Field>
+          <Field label="Confirm new password">
+            <TextInput type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" minLength={MIN_PASSWORD} />
+          </Field>
+          <p className="text-xs text-slate2">At least {MIN_PASSWORD} characters.</p>
+          {passwordError && <p className="text-claret" role="alert">{passwordError}</p>}
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setPasswordOpen(false)}>Cancel</Button>
+            <Button onClick={changePassword} disabled={passwordBusy}>{passwordBusy ? 'Saving…' : 'Change password'}</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal title="Sign out of all devices" open={signOutAllOpen} onClose={() => setSignOutAllOpen(false)}>
+        <div className="space-y-4 text-sm">
+          <p className="text-slate2">
+            This ends every CashFlow session for {user?.email} — desktop, iPad and phone — and signs you out here too.
+            Your data is untouched; you'll just need to sign in again.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setSignOutAllOpen(false)}>Cancel</Button>
+            <Button onClick={signOutEverywhere} disabled={signOutAllBusy}>{signOutAllBusy ? 'Signing out…' : 'Sign out everywhere'}</Button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal title={importPreview?.source === 'revolut' ? 'Import Revolut statement' : 'Import expenses'} open={importPreview !== null} onClose={() => setImportPreview(null)}>
         {importPreview && (

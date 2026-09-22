@@ -63,13 +63,15 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-paper">
+      <a href="#main" className="skip-link">Skip to content</a>
+
       {/* Mobile top bar with the menu (drawer) button */}
-      <header className="sticky top-0 z-40 flex items-center gap-3 border-b border-line bg-bg2/80 px-4 py-3 backdrop-blur-[18px] rail:hidden">
-        <button onClick={() => setDrawerOpen(true)} aria-label="Open menu" className="rounded-[12px] border border-line p-2 text-ink hover:bg-surface2">
+      <header className="pad-safe-top sticky top-0 z-40 flex items-center gap-3 border-b border-line bg-bg2/80 px-4 py-2 backdrop-blur-[18px] rail:hidden">
+        <button onClick={() => setDrawerOpen(true)} aria-label="Open menu" aria-expanded={drawerOpen} className="grid h-11 w-11 shrink-0 place-items-center rounded-[12px] border border-line text-ink hover:bg-surface2">
           <Menu size={20} aria-hidden />
         </button>
         <NavLink to="/" className="flex items-center gap-2">{BrandMark}{Wordmark}</NavLink>
-        <button onClick={toggle} aria-label={theme === 'midnight' ? 'Switch to Daylight' : 'Switch to Midnight'} className="ml-auto rounded-[12px] border border-line p-2 text-muted hover:bg-surface2 hover:text-ink">
+        <button onClick={toggle} aria-label={theme === 'midnight' ? 'Switch to Daylight' : 'Switch to Midnight'} className="ml-auto grid h-11 w-11 shrink-0 place-items-center rounded-[12px] border border-line text-muted hover:bg-surface2 hover:text-ink">
           {theme === 'midnight' ? <Sun size={18} aria-hidden /> : <Moon size={18} aria-hidden />}
         </button>
       </header>
@@ -107,7 +109,7 @@ export default function Layout() {
 
         {/* Main content */}
         <div className="min-w-0 flex-1">
-          <main className="mx-auto w-full max-w-[1160px] px-4 pb-[92px] pt-6 rail:px-[42px] rail:pb-10 rail:pt-[34px]">
+          <main id="main" tabIndex={-1} className="pad-content-bottom mx-auto w-full max-w-[1160px] px-4 pt-6 rail:px-[42px] rail:!pb-10 rail:pt-[34px]">
             <Outlet />
           </main>
         </div>
@@ -117,10 +119,10 @@ export default function Layout() {
       {drawerOpen && (
         <div className="fixed inset-0 z-50 rail:hidden" role="dialog" aria-modal="true" aria-label="Menu">
           <div className="absolute inset-0 bg-black/50" onClick={() => setDrawerOpen(false)} />
-          <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85%] flex-col bg-bg2 shadow-card">
+          <div className="pad-safe-top pad-safe-bottom absolute inset-y-0 left-0 flex w-72 max-w-[85%] flex-col bg-bg2 shadow-card">
             <div className="flex items-center justify-between border-b border-line px-4 py-3">
               <NavLink to="/" className="flex items-center gap-2">{BrandMark}{Wordmark}</NavLink>
-              <button onClick={() => setDrawerOpen(false)} aria-label="Close menu" className="rounded-[12px] border border-line p-2 text-ink hover:bg-surface2">
+              <button onClick={() => setDrawerOpen(false)} aria-label="Close menu" className="grid h-11 w-11 shrink-0 place-items-center rounded-[12px] border border-line text-ink hover:bg-surface2">
                 <X size={20} aria-hidden />
               </button>
             </div>
@@ -144,11 +146,11 @@ export default function Layout() {
       )}
 
       {/* Mobile bottom tab bar — 4 primary destinations */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg2/80 backdrop-blur-[18px] rail:hidden" aria-label="Quick navigation">
+      <nav className="pad-safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg2/80 backdrop-blur-[18px] rail:hidden" aria-label="Quick navigation">
         <div className="grid grid-cols-4">
           {primary.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.exact}
-              className={({ isActive }) => `flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${isActive ? 'text-accent-strong' : 'text-muted'}`}>
+              className={({ isActive }) => `flex min-h-[52px] flex-col items-center justify-center gap-1 py-2 text-[11px] font-medium ${isActive ? 'text-accent-strong' : 'text-muted'}`}>
               <item.Icon size={20} strokeWidth={2} aria-hidden />
               {item.label}
             </NavLink>

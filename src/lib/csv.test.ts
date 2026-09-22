@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isRevolutCsv, parseRevolutCsv, parseExpensesCsv } from './csv'
+import { isRevolutCsv, parseRevolutCsv, parseExpensesCsv, sanitiseCsvValue } from './csv'
 
 const REVOLUT = `Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance
 CARD_PAYMENT,Current,2026-05-01 08:14:22,2026-05-02 09:00:00,Tesco Dublin,-42.50,0.00,EUR,COMPLETED,1957.50
@@ -62,5 +62,25 @@ describe('parseExpensesCsv still works for generic files', () => {
     const { rows, skipped } = parseExpensesCsv('description,amount,date\nLunch,£8.50,03/05/2026')
     expect(skipped).toHaveLength(0)
     expect(rows[0]).toMatchObject({ name: 'Lunch', amount: 8.5, date: '2026-05-03', category: 'other' })
+  })
+})
+
+describe('sanitiseCsvValue', () => {
+  it('neutralises cells a spreadsheet would execute', () => {
+    // A bank statement can carry any merchant name; these are the prefixes
+    // Excel/Numbers/Sheets treat as the start of a formula.
+    expect(sanitiseCsvValue('=1+1')).toBe("'=1+1")
+    expect(sanitiseCsvValue('+44 SHOP')).toBe("'+44 SHOP")
+    expect(sanitiseCsvValue('-100 REFUND')).toBe("'-100 REFUND")
+    expect(sanitiseCsvValue('@SUM(A1)')).toBe("'@SUM(A1)")
+    expect(sanitiseCsvValue('\tTAB')).toBe("'\tTAB")
+  })
+
+  it('leaves ordinary values alone', () => {
+    expect(sanitiseCsvValue('Tesco')).toBe('Tesco')
+    expect(sanitiseCsvValue('')).toBe('')
+    expect(sanitiseCsvValue(12.5)).toBe(12.5)
+    expect(sanitiseCsvValue(null)).toBe(null)
+    expect(sanitiseCsvValue(true)).toBe(true)
   })
 })

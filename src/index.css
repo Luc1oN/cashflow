@@ -75,6 +75,66 @@ body {
   @apply bg-paper font-body text-ink antialiased;
 }
 
+/* ── Mobile input sizing ──────────────────────────────────────────────────
+   iOS Safari zooms the whole page in whenever a focused form control renders
+   below 16px, and never zooms back out — which is what makes editing a bill on
+   an iPhone or iPad leave the layout stranded mid-zoom. The app's inputs are
+   text-sm (14px), so force 16px on touch devices; pointer-precise devices
+   (desktop) keep the tighter type. Applied at the element level so it covers
+   every input in the app, including ones that don't use the shared UI kit. */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    /* !important is load-bearing: these are element selectors and every input
+       in the app also carries Tailwind's .text-sm (14px), which outranks them
+       on specificity. Without it the rule is silently ignored and iOS keeps
+       zooming. Scoped to coarse pointers, so desktop type is unaffected. */
+    font-size: 16px !important;
+  }
+}
+
+/* Date/number controls on iOS render with Apple's own padding unless reset,
+   which makes them sit a few pixels taller than text inputs beside them. */
+input[type='date'],
+input[type='number'] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* ── Safe areas ───────────────────────────────────────────────────────────
+   Paired with viewport-fit=cover in index.html. On a notched iPhone (and any
+   iPad in standalone/home-screen mode) these keep the fixed bottom tab bar
+   clear of the home indicator and the sticky header clear of the status bar. */
+.pad-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pad-safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+/* Content gutter: the tab bar's own height plus whatever the device reserves. */
+.pad-content-bottom {
+  padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+}
+
+/* ── Focus visibility ─────────────────────────────────────────────────────
+   Most interactive elements in the app are bare <button>s with hover-only
+   styling, so keyboard users had nothing to follow. One global rule covers
+   them; :focus-visible keeps it off mouse/touch clicks. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid rgb(var(--accent));
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Keyboard-only skip link for the desktop sidebar. */
+.skip-link {
+  @apply sr-only;
+}
+.skip-link:focus {
+  @apply not-sr-only fixed left-4 top-4 z-[100] rounded-lg bg-surface px-4 py-2 text-sm font-medium text-ink shadow-card;
+}
+
 /* Signature gradient — hero, primary button, brand mark, active fills, card visual ONLY. */
 .grad-accent {
   background-image: linear-gradient(135deg, rgb(var(--accent)), rgb(var(--accent2)));

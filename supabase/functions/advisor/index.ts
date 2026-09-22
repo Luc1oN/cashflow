@@ -13,6 +13,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 const DAILY_CAP = 50 // messages per user per day
+const MAX_MESSAGE_CHARS = 8_000 // per message, to bound token spend on the owner's API key
 const CHAT_MODEL = 'claude-sonnet-4-6'
 const REVIEW_MODEL = 'claude-opus-4-8'
 
@@ -88,21 +89,30 @@ Deno.serve(async (req: Request) => {
   }
   const mode = payload.mode === 'review' ? 'review' : 'chat'
   const messages = Array.isArray(payload.messages) ? payload.messages : []
+  // Bound what one request can cost: the API key is the project owner's, so an
+  // unbounded transcript is an unbounded bill. Truncate rather than reject so a
+  // long-running conversation keeps working.
   const trimmed = messages
     .filter((m) => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim())
     .slice(-24)
+    .map((m) => ({ role: m.role, content: m.content.slice(0, MAX_MESSAGE_CHARS) }))
   if (trimmed.length === 0) return json({ error: 'No message provided.' }, 400)
 
-  // Per-user daily cap
+  // Per-user daily cap. Counted by a SECURITY DEFINER function (migration 05):
+  // read-then-write from here would both race (concurrent requests all read the
+  // same count) and be pointless, since the client could reset its own counter
+  // over the REST API. The function increments atomically and the table is no
+  // longer client-writable, so this is the only way the count moves.
   const today = new Date().toISOString().slice(0, 10)
-  const { data: usage } = await supabase
-    .from('advisor_usage').select('count').eq('user_id', user.id).eq('day', today).maybeSingle()
-  const used = usage?.count ?? 0
-  if (used >= DAILY_CAP) {
+  const { data: usedAfter, error: usageErr } = await supabase
+    .rpc('bump_advisor_usage', { p_cap: DAILY_CAP })
+  if (usageErr) {
+    console.error('advisor_usage bump failed', usageErr)
+    return json({ error: 'Could not check your usage allowance. Try again shortly.' }, 503)
+  }
+  if ((usedAfter ?? 0) > DAILY_CAP) {
     return json({ error: `Daily limit reached (${DAILY_CAP} messages). Try again tomorrow.` }, 429)
   }
-  await supabase.from('advisor_usage')
-    .upsert({ user_id: user.id, day: today, count: used + 1 }, { onConflict: 'user_id,day' })
 
   // Authoritative data (RLS-scoped). Forecast summary comes from the client.
   const sinceExpenses = new Date(Date.now() - 120 * 86_400_000).toISOString().slice(0, 10)
@@ -144,7 +154,7 @@ Deno.serve(async (req: Request) => {
       { type: 'text', text: SYSTEM_PROMPT },
       { type: 'text', text: `Here is the signed-in user's financial data (authoritative, server-fetched):\n${dataBlock}`, cache_control: { type: 'ephemeral' } },
     ],
-    messages: trimmed.map((m) => ({ role: m.role, content: m.content })),
+    messages: trimmed,
     stream: true,
   }
 

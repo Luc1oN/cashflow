@@ -1,6 +1,20 @@
 import Papa from 'papaparse'
 import { supabase } from './supabase'
 
+/**
+ * Neutralise spreadsheet formula injection.
+ *
+ * Excel, Numbers and Sheets execute any cell whose text starts with = + - @ or
+ * a control character. Merchant and description text comes from imported bank
+ * statements — i.e. from whoever named the transaction — so an exported file
+ * opened in a spreadsheet could run something the user never typed. Prefixing
+ * with a single quote makes the cell inert; it displays as plain text.
+ */
+export function sanitiseCsvValue(value: unknown): unknown {
+  if (typeof value !== 'string') return value
+  return /^[=+\-@\t\r]/.test(value) ? `'${value}` : value
+}
+
 /** Download any of the user's tables as CSV (RLS limits rows to their own). */
 export async function exportTableCsv(table: string): Promise<void> {
   const { data, error } = await supabase.from(table).select('*').order('created_at')
@@ -8,16 +22,26 @@ export async function exportTableCsv(table: string): Promise<void> {
   const rows = (data ?? []).map((row) => {
     const { user_id, ...rest } = row as Record<string, unknown>
     void user_id
-    return rest
+    return Object.fromEntries(Object.entries(rest).map(([k, v]) => [k, sanitiseCsvValue(v)]))
   })
-  const csv = Papa.unparse(rows)
+  // BOM so Excel opens UTF-8 (€ and £ signs) correctly instead of as mojibake.
+  const csv = '\uFEFF' + Papa.unparse(rows)
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
   a.download = `cashflow-${table}-${new Date().toISOString().slice(0, 10)}.csv`
+  a.rel = 'noopener'
+  // Safari (iPhone/iPad) ignores .click() on an anchor that isn't in the
+  // document, and revoking the URL in the same tick cancels the download before
+  // it starts — which is why Export did nothing on iOS. Attach, click, then
+  // clean up on the next tick.
+  document.body.appendChild(a)
   a.click()
-  URL.revokeObjectURL(url)
+  setTimeout(() => {
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }, 1000)
 }
 
 export interface ParsedExpenseRow {

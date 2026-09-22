@@ -28,16 +28,17 @@ Currency defaults to GBP and is changeable per-user in **Settings** — pick EUR
 - **Frontend:** React 18, TypeScript, Vite, Tailwind CSS (dark mode via CSS variables), React Router (lazy-loaded routes), TanStack Query, Recharts, date-fns, PapaParse
 - **Backend:** Supabase — Postgres with Row-Level Security (every table scoped to the signed-in user), email/password auth, a private `receipts` storage bucket, and an `apply_settlement()` Postgres function so settling is a single all-or-nothing transaction
 - **Quality:** Vitest unit tests on the forecast and settlement engines (`npm test`), GitHub Actions CI on every push, error boundary, code-split bundles
-- **Schema:** three SQL migrations in `supabase/migrations/` — run them **in order**
+- **Schema:** five SQL migrations in `supabase/migrations/` — run them **in order**
 
 ## Setup
 
 ### 1. Create the Supabase project
 
 1. Go to [supabase.com](https://supabase.com), create a project, and pick a strong database password.
-2. In the dashboard open **SQL Editor** and run each file in `supabase/migrations/` **in order** (`...01_init.sql`, then `...02_settle.sql`, then `...03_v2.sql`). Or use the CLI: `supabase link --project-ref <ref>` then `supabase db push`.
+2. In the dashboard open **SQL Editor** and run each file in `supabase/migrations/` **in order** (`...01_init.sql` through `...05_security.sql`). Or use the CLI: `supabase link --project-ref <ref>` then `supabase db push`. **`...05_security.sql` is not optional** — see [Security](#security) below.
 3. In **Authentication → Providers**, make sure **Email** is enabled. Keep "Confirm email" on if others will sign up.
-4. The Supabase **Project URL** and **anon public** key are hardcoded in `src/api`/`src/lib/supabase.ts`. The anon key is safe to be public — Row-Level Security protects your data, not key secrecy. (Never put the `service_role` key in the repo; it bypasses RLS.) If you fork this for your own Supabase project, swap those two values in `src/lib/supabase.ts`.
+4. **Turn off public sign-ups** unless you actually want them: **Authentication → Sign In / Providers → Allow new users to sign up**. This is a personal app backed by *your* Supabase project and *your* Anthropic key — every account that can sign up can also spend advisor credit against that key. Leave sign-ups on only while you're inviting someone; RLS keeps their data separate, but it doesn't stop them costing you money.
+5. The Supabase **Project URL** and **anon public** key come from `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` at build time, falling back to the literals in `src/lib/supabase.ts`. The anon key is safe to be public — Row-Level Security protects your data, not key secrecy. (Never put the `service_role` key in the repo; it bypasses RLS.) To fork this for your own project, set those two as repository variables (or edit the fallbacks).
 
 ### 2. Run the app locally
 
@@ -94,6 +95,32 @@ Export each entity from Base44 as CSV, drop the Base44 system columns (`id`, `cr
 
 Settling calls the `apply_settlement()` Postgres function via RPC. The balance change, ledger rows, recurring date rolls, savings top-ups, planned tick-offs, and the profile stamp all commit in **one database transaction** — a dropped connection can never leave your money half-applied. The function runs as *invoker*, so Row-Level Security still protects every row it touches. Each settlement and its line items land in the `settlements` and `transactions` tables, which power the History page.
 
+## Security
+
+What protects the data, and what you have to set up:
+
+- **Row-Level Security on every table.** Each policy checks `auth.uid()` on both
+  `USING` (which rows you may touch) *and* `WITH CHECK` (what the row may look
+  like afterwards). The `WITH CHECK` half arrived in `...05_security.sql`;
+  without it a signed-in user could reassign one of their own rows to another
+  user's id. **Run that migration.**
+- **The advisor's daily cap is server-enforced.** `advisor_usage` is readable but
+  not writable by the client; only the `bump_advisor_usage()` SECURITY DEFINER
+  function increments it, atomically. Before `...05_security.sql` the counter was
+  client-writable, which made the cap — and so the ceiling on your Anthropic
+  bill — advisory only.
+- **The Anthropic API key never reaches the browser.** It lives in the `advisor`
+  Edge Function, which verifies the caller's JWT and fetches their data under RLS.
+- **`bill-reminders` requires `CRON_SECRET`.** It holds the service-role key and
+  emails every user; it fails closed if the secret is unset.
+- **Receipts** live in a private bucket partitioned by user id and are served
+  through 10-minute signed URLs.
+- **Account controls.** Password reset from the sign-in screen, and in
+  **Settings → Security**, change password and sign out of every device at once
+  (useful when the same account is signed in on desktop, iPad and phone).
+- **Turn off public sign-ups** unless you're actively inviting someone (setup
+  step 4).
+
 ## Tests & CI
 
 ```bash
@@ -105,7 +132,9 @@ npm run build   # typecheck + production build
 
 ## Bill reminder emails (optional)
 
-`supabase/functions/bill-reminders/` is an Edge Function that emails each user a digest of bills due in the next 7 days via [Resend](https://resend.com). Deploy with `supabase functions deploy bill-reminders`, set `RESEND_API_KEY` and `REMINDER_FROM` as secrets, and schedule it daily with a cron job — full instructions are in the file's header comment.
+`supabase/functions/bill-reminders/` is an Edge Function that emails each user a digest of bills due in the next 7 days via [Resend](https://resend.com). Deploy with `supabase functions deploy bill-reminders`, set `RESEND_API_KEY`, `REMINDER_FROM` **and `CRON_SECRET`** as secrets, and schedule it daily with a cron job that sends the secret in an `x-cron-secret` header — full instructions are in the file's header comment.
+
+`CRON_SECRET` is required: the function runs with the service-role key and mails every user, so it refuses to run without one.
 
 ## How the forecast works
 

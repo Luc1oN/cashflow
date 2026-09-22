@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm'
 import { Sparkles, Send, Trash2, Square } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { isCoarsePointer } from '../lib/anim'
 import { useTable } from '../lib/useTable'
 import { buildForecastSummary } from '../lib/snapshot'
 import { streamAdvisor, type AdvisorMessage } from '../lib/advisor'
@@ -157,7 +158,7 @@ export default function Advisor() {
           <Skeleton className="h-10 w-64" />
         </div>
       ) : (
-        <Card className="mt-4 flex h-[min(70vh,620px)] flex-col p-0">
+        <Card className="mt-4 flex h-[min(70dvh,620px)] flex-col p-0">
           {/* Transcript */}
           <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-4">
             {messages.length === 0 && historyLoaded && (
@@ -206,7 +207,7 @@ export default function Advisor() {
                 key={qa.label}
                 onClick={() => send(qa.prompt, qa.mode)}
                 disabled={streaming}
-                className="rounded-full border border-line px-3 py-1 text-xs font-medium text-slate2 transition-colors hover:border-accent/40 hover:text-ink disabled:opacity-50"
+                className="min-h-[36px] rounded-full border border-line px-3.5 py-1.5 text-xs font-medium text-slate2 transition-colors hover:border-accent/40 hover:text-ink disabled:opacity-50"
               >
                 {qa.label}
               </button>
@@ -222,11 +223,15 @@ export default function Advisor() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input) }
+                // Enter sends on a physical keyboard only. On a phone or iPad the
+                // Return key is how you start a new line, and hijacking it fires
+                // half-written questions at the advisor.
+                if (e.key === 'Enter' && !e.shiftKey && !isCoarsePointer()) { e.preventDefault(); send(input) }
               }}
               rows={1}
+              enterKeyHint="enter"
               placeholder="Ask about your finances…"
-              className="max-h-32 min-h-[40px] flex-1 resize-none rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-slate2 focus:border-accent focus:outline-none"
+              className="max-h-32 min-h-[44px] flex-1 resize-none rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-slate2 focus:border-accent focus:outline-none"
             />
             {streaming ? (
               <Button variant="ghost" onClick={stop}><Square size={16} className="mr-1 inline" aria-hidden /> Stop</Button>
